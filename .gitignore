@@ -1,0 +1,17 @@
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build-*/
+
+# CLion
+.idea/
+*.iml
+
+# Qt Creator
+*.pro.user
+
+# OS
+.DS_Store
+Thumbs.db
