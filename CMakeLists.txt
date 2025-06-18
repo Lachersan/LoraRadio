@@ -23,6 +23,8 @@ add_executable(untitled WIN32
         radioplayer.h
         trayiconmanager.cpp
         trayiconmanager.h
+        AutoStartRegistry.cpp
+        AutoStartRegistry.h
 )
 target_link_libraries(untitled
         Qt::Core
