@@ -19,6 +19,10 @@ find_package(Qt6 COMPONENTS
 add_executable(untitled WIN32
         main.cpp
         resources.qrc
+        radioplayer.cpp
+        radioplayer.h
+        trayiconmanager.cpp
+        trayiconmanager.h
 )
 target_link_libraries(untitled
         Qt::Core
