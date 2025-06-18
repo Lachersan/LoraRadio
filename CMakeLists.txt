@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(untitled)
+project(LoraRadio)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
@@ -16,7 +16,7 @@ find_package(Qt6 COMPONENTS
         Multimedia
         REQUIRED)
 
-add_executable(untitled WIN32
+add_executable(LoraRadio WIN32
         main.cpp
         resources.qrc
         radioplayer.cpp
@@ -26,7 +26,7 @@ add_executable(untitled WIN32
         AutoStartRegistry.cpp
         AutoStartRegistry.h
 )
-target_link_libraries(untitled
+target_link_libraries(LoraRadio
         Qt::Core
         Qt::Gui
         Qt::Widgets
@@ -35,9 +35,9 @@ target_link_libraries(untitled
 
 set(WINDEPLOYQT_PATH "F:/Qt/6.9.0/mingw_64/bin/windeployqt.exe")
 
-set(TARGET_EXE "$<TARGET_FILE:untitled>")
+set(TARGET_EXE "$<TARGET_FILE:LoraRadio>")
 
-add_custom_command(TARGET untitled POST_BUILD
+add_custom_command(TARGET LoraRadio POST_BUILD
         COMMAND "${WINDEPLOYQT_PATH}" "${TARGET_EXE}"
         COMMENT "Запуск windeployqt для копирования Qt DLL и плагинов"
 )
