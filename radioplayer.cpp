@@ -43,6 +43,7 @@ RadioPlayer::RadioPlayer(QWidget *parent)
     // --- системный трей (как было) ---
     trayIcon = new QSystemTrayIcon(QIcon(":/icons/icon.png"), this);
     QMenu *trayMenu = new QMenu(this);
+    setWindowIcon(QIcon(":/icons/icon.png"));
 
     QAction *showAction = new QAction(tr("Показать"), this);
     connect(showAction, &QAction::triggered, this, &QWidget::showNormal);
