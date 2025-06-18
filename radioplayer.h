@@ -6,6 +6,9 @@
 #include <QAudioOutput>
 #include <QSystemTrayIcon>
 #include "trayiconmanager.h"
+#include <QSlider>
+#include <QSpinBox>
+#include <QHBoxLayout>
 
 class RadioPlayer : public QWidget {
     Q_OBJECT
@@ -19,6 +22,14 @@ private:
     TrayIconManager *m_trayManager;
     QAudioOutput *audioOutput;
     QSystemTrayIcon *trayIcon;
+    QSlider   *volumeSlider;
+    QSpinBox  *volumeSpin;
+    QHBoxLayout *controlLayout;
+
+private slots:
+    void onVolumeChanged(int value);
 };
+
+
 
 #endif // RADIOPLAYER_H
