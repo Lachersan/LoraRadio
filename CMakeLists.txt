@@ -18,13 +18,14 @@ find_package(Qt6 COMPONENTS
 
 add_executable(LoraRadio WIN32
         main.cpp
-        resources.qrc
         radioplayer.cpp
         radioplayer.h
         trayiconmanager.cpp
         trayiconmanager.h
         AutoStartRegistry.cpp
         AutoStartRegistry.h
+        resources.qrc
+        app.rc
 )
 target_link_libraries(LoraRadio
         Qt::Core
