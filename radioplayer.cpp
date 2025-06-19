@@ -1,4 +1,6 @@
+
 #include "radioplayer.h"
+#include <QWidget>
 #include <QApplication>
 #include <QMenu>
 #include <QAction>
@@ -11,12 +13,16 @@ RadioPlayer::RadioPlayer(QWidget *parent)
       audioOutput(new QAudioOutput(this)),
       volumeSlider(new QSlider(Qt::Horizontal, this)),
       volumeSpin(new QSpinBox(this)),
-      controlLayout(new QHBoxLayout)
+      controlLayout(new QHBoxLayout),
+      settings("MyApp", "LoraRadio")  // Инициализация QSettings
 {
+    // Загрузка сохранённого значения громкости (0–100)
+    int savedVol = settings.value("audio/volume", 5).toInt();
+
     // Настройка плеера
     player->setAudioOutput(audioOutput);
     player->setSource(QUrl("https://stream.laut.fm/chillradioluka"));
-    audioOutput->setVolume(0.05);  // стартовая громкость 5%
+    audioOutput->setVolume(savedVol / 100.0);  // стартовая громкость
 
     // Настройка ползунка и spinbox
     volumeSlider->setRange(0, 100);
@@ -32,15 +38,14 @@ RadioPlayer::RadioPlayer(QWidget *parent)
     controlLayout->addWidget(volumeSpin);
     setLayout(controlLayout);
 
-    // Начальное значение
-    int initVol = static_cast<int>(audioOutput->volume() * 100);
-    volumeSlider->setValue(initVol);
-    volumeSpin->setValue(initVol);
+    // Установка начальных значений виджетов
+    volumeSlider->setValue(savedVol);
+    volumeSpin->setValue(savedVol);
 
     // Запуск плеера
     player->play();
 
-    // --- системный трей (как было) ---
+    // --- системный трей ---
     trayIcon = new QSystemTrayIcon(QIcon(":/icons/icon.png"), this);
     QMenu *trayMenu = new QMenu(this);
     setWindowIcon(QIcon(":/icons/icon.png"));
@@ -70,7 +75,10 @@ void RadioPlayer::onVolumeChanged(int value) {
     qreal vol = value / qreal(100);
     audioOutput->setVolume(vol);
 
-    // Обновляем оба виджета, чтобы они были синхронизированы
+    // Сохраняем новое значение
+    settings.setValue("audio/volume", value);
+
+    // Обновляем оба виджета
     if (volumeSlider->value() != value)
         volumeSlider->setValue(value);
     if (volumeSpin->value() != value)
@@ -81,3 +89,4 @@ void RadioPlayer::closeEvent(QCloseEvent *event) {
     hide();
     event->ignore();
 }
+#include "radioplayer.moc"

@@ -9,6 +9,7 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QHBoxLayout>
+#include <QSettings>
 
 class RadioPlayer : public QWidget {
     Q_OBJECT
@@ -25,6 +26,7 @@ private:
     QSlider   *volumeSlider;
     QSpinBox  *volumeSpin;
     QHBoxLayout *controlLayout;
+    QSettings settings;
 
 private slots:
     void onVolumeChanged(int value);
