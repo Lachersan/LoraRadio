@@ -89,4 +89,3 @@ void RadioPlayer::closeEvent(QCloseEvent *event) {
     hide();
     event->ignore();
 }
-#include "radioplayer.moc"
