@@ -10,6 +10,11 @@
 #include <QSpinBox>
 #include <QHBoxLayout>
 #include <QSettings>
+#include <QApplication>
+#include <QMenu>
+#include <QAction>
+#include <QCloseEvent>
+#include <QDebug>
 
 class RadioPlayer : public QWidget {
     Q_OBJECT

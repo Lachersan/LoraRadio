@@ -1,6 +1,5 @@
 #include "trayiconmanager.h"
-#include <QAction>
-#include <QApplication>
+
 
 TrayIconManager::TrayIconManager(QObject *parent)
     : QObject(parent),

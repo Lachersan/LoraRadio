@@ -1,11 +1,7 @@
 
 #include "radioplayer.h"
-#include <QWidget>
-#include <QApplication>
-#include <QMenu>
-#include <QAction>
-#include <QCloseEvent>
-#include <QDebug>
+
+
 
 RadioPlayer::RadioPlayer(QWidget *parent)
     : QWidget(parent),

@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QSystemTrayIcon>
 #include <QMenu>
+#include <QAction>
+#include <QApplication>
 
 class TrayIconManager : public QObject {
     Q_OBJECT
