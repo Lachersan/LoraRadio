@@ -62,6 +62,12 @@ RadioPlayer::RadioPlayer(QWidget *parent)
     hide();
 }
 
+void RadioPlayer::setStreamUrl(const QString &url) {
+    player->stop();
+    player->setSource(QUrl(url));
+    player->play();
+}
+
 void RadioPlayer::onVolumeChanged(int value) {
     // Устанавливаем громкость (0.0–1.0)
     qreal vol = value / qreal(100);

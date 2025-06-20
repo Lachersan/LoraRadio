@@ -26,6 +26,8 @@ add_executable(LoraRadio WIN32
         AutoStartRegistry.h
         resources.qrc
         app.rc
+        stationmanager.cpp
+        stationmanager.h
 )
 target_link_libraries(LoraRadio
         Qt::Core

@@ -20,6 +20,7 @@ class RadioPlayer : public QWidget {
     Q_OBJECT
 public:
     explicit RadioPlayer(QWidget *parent = nullptr);
+    void setStreamUrl(const QString &url);
 protected:
     void closeEvent(QCloseEvent *event) override;
 
