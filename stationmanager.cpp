@@ -6,7 +6,7 @@
 
 StationManager::StationManager(const QString &jsonPath, QObject *parent)
     : QObject(parent)
-    , m_jsonPath(jsonPath)
+    , m_jsonPath("F:/Project/untitled/stations.json")
 {
     load();
 }

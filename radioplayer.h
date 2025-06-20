@@ -5,39 +5,71 @@
 #include <QMediaPlayer>
 #include <QAudioOutput>
 #include <QSystemTrayIcon>
-#include "trayiconmanager.h"
-#include <QSlider>
-#include <QSpinBox>
-#include <QHBoxLayout>
 #include <QSettings>
-#include <QApplication>
-#include <QMenu>
-#include <QAction>
-#include <QCloseEvent>
-#include <QDebug>
+#include <QSpinBox>
+#include <QListWidget>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include "stationmanager.h"
+
+QT_BEGIN_NAMESPACE
+class QSlider;
+class QSpinBox;
+class QListWidget;
+class QLineEdit;
+class QPushButton;
+class QMenu;
+class QAction;
+class QHBoxLayout;
+class QFormLayout;
+QT_END_NAMESPACE
 
 class RadioPlayer : public QWidget {
     Q_OBJECT
+
 public:
-    explicit RadioPlayer(QWidget *parent = nullptr);
+    explicit RadioPlayer(StationManager *stations, QWidget *parent = nullptr);
     void setStreamUrl(const QString &url);
+
 protected:
     void closeEvent(QCloseEvent *event) override;
 
+private slots:
+    void onStationSelected(int row);
+    void onAddStation();
+    void onRemoveStation();
+    void onUpdateStation();
+    void onVolumeChanged(int value);
+
 private:
-    QMediaPlayer *player;
-    TrayIconManager *m_trayManager;
-    QAudioOutput *audioOutput;
-    QSystemTrayIcon *trayIcon;
+    // — методы для “подчистки” конструктора
+    void setupUi();
+    void setupTrayIcon();
+    void setupConnections();
+    void refreshStationList();
+
+    // — поля
+    QMediaPlayer   *player;
+    QAudioOutput   *audioOutput;
+    QSystemTrayIcon* trayIcon;
+    QSettings       settings;
+
+    StationManager *m_stations;
+
+    // GUI-блок “громкость”
     QSlider   *volumeSlider;
     QSpinBox  *volumeSpin;
-    QHBoxLayout *controlLayout;
-    QSettings settings;
+    QHBoxLayout *volumeLayout;
 
-private slots:
-    void onVolumeChanged(int value);
+    // GUI-блок “станции”
+    QListWidget *listWidget;
+    QLineEdit   *editName;
+    QLineEdit   *editUrl;
+    QPushButton *btnAdd;
+    QPushButton *btnRemove;
+    QPushButton *btnUpdate;
 };
-
-
-
 #endif // RADIOPLAYER_H
