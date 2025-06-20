@@ -1,7 +1,4 @@
-
 #include "radioplayer.h"
-
-
 
 RadioPlayer::RadioPlayer(QWidget *parent)
     : QWidget(parent),
