@@ -67,15 +67,10 @@ void RadioPlayer::setupUi()
 
     // Список станций и форма управления
     listWidget = new QListWidget;
-    editName   = new QLineEdit;
-    editUrl    = new QLineEdit;
     btnAdd     = new QPushButton(tr("Добавить"));
     btnRemove  = new QPushButton(tr("Удалить"));
     btnUpdate  = new QPushButton(tr("Изменить"));
 
-    QFormLayout *formLayout = new QFormLayout;
-    formLayout->addRow(tr("Имя:"), editName);
-    formLayout->addRow(tr("URL:"), editUrl);
 
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAdd);
@@ -84,7 +79,6 @@ void RadioPlayer::setupUi()
 
     QVBoxLayout *leftPanel = new QVBoxLayout;
     leftPanel->addWidget(listWidget);
-    leftPanel->addLayout(formLayout);
     leftPanel->addLayout(btnLayout);
 
     // Собираем всё вместе
