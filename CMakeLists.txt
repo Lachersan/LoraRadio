@@ -27,6 +27,9 @@ add_executable(LoraRadio WIN32
         app.rc
         stationmanager.cpp
         stationmanager.h
+        StationDialog.cpp
+        StationDialog.h
+        StationDialog.ui
 )
 target_link_libraries(LoraRadio
         Qt::Core

@@ -1,4 +1,6 @@
 #include "radioplayer.h"
+#include "StationDialog.h"
+
 
 #include <QAudioOutput>
 #include <QCloseEvent>
@@ -69,7 +71,7 @@ void RadioPlayer::setupUi()
     editUrl    = new QLineEdit;
     btnAdd     = new QPushButton(tr("Добавить"));
     btnRemove  = new QPushButton(tr("Удалить"));
-    btnUpdate  = new QPushButton(tr("Править"));
+    btnUpdate  = new QPushButton(tr("Изменить"));
 
     QFormLayout *formLayout = new QFormLayout;
     formLayout->addRow(tr("Имя:"), editName);
@@ -152,10 +154,17 @@ void RadioPlayer::onStationSelected(int row) {
 
 
 void RadioPlayer::onAddStation() {
-    Station st{ editName->text(), editUrl->text() };
-    m_stations->addStation(st);
-    m_stations->save();
+    StationDialog dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        Station st = dlg.station();
+        m_stations->addStation(st);
+        m_stations->save();
+        refreshStationList();
+        // выбираем добавленную
+        listWidget->setCurrentRow(m_stations->stations().size()-1);
+    }
 }
+
 
 void RadioPlayer::onRemoveStation() {
     int row = listWidget->currentRow();
@@ -167,10 +176,23 @@ void RadioPlayer::onRemoveStation() {
 void RadioPlayer::onUpdateStation() {
     int row = listWidget->currentRow();
     if (row < 0) return;
-    Station st{ editName->text(), editUrl->text() };
-    m_stations->updateStation(row, st);
-    m_stations->save();
+
+    // Существующая станция
+    Station current = m_stations->stations().at(row);
+
+    // Открываем диалог
+    StationDialog dlg(current, this);
+    if (dlg.exec() == QDialog::Accepted) {
+        Station edited = dlg.station();
+        // Обновляем через менеджер
+        m_stations->updateStation(row, edited);
+        m_stations->save();
+        // Обновляем UI
+        listWidget->item(row)->setText(edited.name);
+        setStreamUrl(edited.url);
+    }
 }
+
 
 void RadioPlayer::setStreamUrl(const QString &url) {
     player->stop();

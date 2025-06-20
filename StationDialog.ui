@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>StationDialog</class>
+    <widget class="QDialog" name="StationDialog">
+        <layout class="QVBoxLayout">
+            <item>
+                <layout class="QFormLayout">
+                    <item row="0" column="0"><widget class="QLabel" name="labelName"><property name="text"><string>Имя:</string></property></widget></item>
+                    <item row="0" column="1"><widget class="QLineEdit" name="nameEdit"/></item>
+                    <item row="1" column="0"><widget class="QLabel" name="labelUrl"><property name="text"><string>URL:</string></property></widget></item>
+                    <item row="1" column="1"><widget class="QLineEdit" name="urlEdit"/></item>
+                </layout>
+            </item>
+            <item>
+                <layout class="QHBoxLayout">
+                    <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+                    <item><widget class="QPushButton" name="buttonOk"><property name="text"><string>OK</string></property></widget></item>
+                    <item><widget class="QPushButton" name="buttonCancel"><property name="text"><string>Отмена</string></property></widget></item>
+                </layout>
+            </item>
+        </layout>
+    </widget>
+    <connections/>
+</ui>
