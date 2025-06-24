@@ -70,12 +70,16 @@ void RadioPlayer::setupUi()
     btnAdd     = new QPushButton(tr("Добавить"));
     btnRemove  = new QPushButton(tr("Удалить"));
     btnUpdate  = new QPushButton(tr("Изменить"));
+    btnReconnect = new QPushButton(tr("Переподключить"));
+
+
 
 
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAdd);
     btnLayout->addWidget(btnRemove);
     btnLayout->addWidget(btnUpdate);
+    btnLayout->addWidget(btnReconnect);
 
     QVBoxLayout *leftPanel = new QVBoxLayout;
     leftPanel->addWidget(listWidget);
@@ -124,11 +128,9 @@ void RadioPlayer::setupConnections()
     connect(btnAdd,    &QPushButton::clicked, this, &RadioPlayer::onAddStation);
     connect(btnRemove, &QPushButton::clicked, this, &RadioPlayer::onRemoveStation);
     connect(btnUpdate, &QPushButton::clicked, this, &RadioPlayer::onUpdateStation);
-    connect(m_stations, &StationManager::stationsChanged,
-            this, &RadioPlayer::refreshStationList);
-    connect(listWidget, &QListWidget::currentRowChanged,
-        this,       &RadioPlayer::onStationSelected);
-
+    connect(m_stations, &StationManager::stationsChanged, this, &RadioPlayer::refreshStationList);
+    connect(listWidget, &QListWidget::currentRowChanged, this,       &RadioPlayer::onStationSelected);
+    connect(btnReconnect, &QPushButton::clicked, this,         &RadioPlayer::onReconnectStation);
 }
 
 
@@ -186,6 +188,19 @@ void RadioPlayer::onUpdateStation() {
         setStreamUrl(edited.url);
     }
 }
+
+void RadioPlayer::onReconnectStation()
+{
+    int row = listWidget->currentRow();
+    if (row < 0 || row >= m_stations->stations().size()) {
+        return; // нечего переподключать
+    }
+    // Получаем текущую станцию
+    const Station &st = m_stations->stations().at(row);
+    // Заново запускаем плеер на том же URL
+    setStreamUrl(st.url);
+}
+
 
 
 void RadioPlayer::setStreamUrl(const QString &url) {

@@ -9,6 +9,6 @@ int main(int argc, char *argv[]) {
     RadioPlayer radio(&stations);
 
     radio.show();
-    setAutoStartRegistry(true);
+    setAutoStartRegistry(false);
     return app.exec();
 }

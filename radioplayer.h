@@ -43,6 +43,8 @@ private slots:
     void onRemoveStation();
     void onUpdateStation();
     void onVolumeChanged(int value);
+    void onReconnectStation();
+
 
 private:
     // — методы для “подчистки” конструктора
@@ -71,5 +73,7 @@ private:
     QPushButton *btnAdd;
     QPushButton *btnRemove;
     QPushButton *btnUpdate;
+    QPushButton   *btnReconnect;
+
 };
 #endif // RADIOPLAYER_H
