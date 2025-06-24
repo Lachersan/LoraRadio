@@ -20,6 +20,7 @@
 #include <QVBoxLayout>
 #include <QApplication>
 #include <QAction>
+#include <QCursor>
 
 
 RadioPlayer::RadioPlayer(StationManager *stations, QWidget *parent)
@@ -98,40 +99,100 @@ void RadioPlayer::setupUi()
 void RadioPlayer::setupTrayIcon()
 {
     trayIcon = new QSystemTrayIcon(QIcon(":/icons/icon.png"), this);
-    QMenu *menu = new QMenu;
 
-    QAction *showAct = menu->addAction(tr("Показать"));
-    QAction *quitAct = menu->addAction(tr("Выход"));
-
-    connect(showAct, &QAction::triggered, this, &QWidget::showNormal);
-    connect(quitAct, &QAction::triggered, qApp, &QApplication::quit);
-
+    // контекстное меню (правый клик)
+    auto *menu = new QMenu;
+    menu->addAction(tr("Показать"), this, &QWidget::showNormal);
+    menu->addAction(tr("Выход"),    qApp,  &QCoreApplication::quit);
     trayIcon->setContextMenu(menu);
-    trayIcon->setToolTip(tr("Lofi Radio Player"));
-    connect(trayIcon, &QSystemTrayIcon::activated, this, [this](auto reason){
-        if (reason == QSystemTrayIcon::Trigger) {
-            showNormal();
-            raise(); activateWindow();
-        }
-    });
     trayIcon->show();
+
+    // popup
+    quickPopup = new QuickControlPopup(m_stations, this);
+    quickPopup->setFixedSize(200, 150);
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this,
+      [=](QSystemTrayIcon::ActivationReason reason){
+        switch (reason) {
+        case QSystemTrayIcon::Trigger:      // одинарный клик
+                showQuickPopup();
+                break;
+            case QSystemTrayIcon::DoubleClick:  // двойной клик
+                quickPopup->hide();
+                showNormal();
+                raise(); activateWindow();
+                break;
+            default:
+                break;
+            }
+        });
 }
+
+void RadioPlayer::showQuickPopup()
+{
+    if (!quickPopup) return;
+    QPoint p = QCursor::pos();
+    int x = p.x() - quickPopup->width()/2;
+    int y = p.y() - quickPopup->height() - 10;
+    quickPopup->move(x, y);
+    quickPopup->show();
+    quickPopup->raise();
+    quickPopup->setFocus(Qt::MouseFocusReason);
+}
+
+
 
 void RadioPlayer::setupConnections()
 {
+    // ========== Основное окно ==========
+    // Смена громкости из слайдера и spinbox
     connect(volumeSlider, &QSlider::valueChanged,
-            this, &RadioPlayer::onVolumeChanged);
+            this,         &RadioPlayer::onVolumeChanged);
     connect(volumeSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
-            this, &RadioPlayer::onVolumeChanged);
+            this,         &RadioPlayer::onVolumeChanged);
+
+    // Выбор станции в списке
     connect(listWidget, &QListWidget::currentRowChanged,
-            this, &RadioPlayer::onStationSelected);
-    connect(btnAdd,    &QPushButton::clicked, this, &RadioPlayer::onAddStation);
-    connect(btnRemove, &QPushButton::clicked, this, &RadioPlayer::onRemoveStation);
-    connect(btnUpdate, &QPushButton::clicked, this, &RadioPlayer::onUpdateStation);
-    connect(m_stations, &StationManager::stationsChanged, this, &RadioPlayer::refreshStationList);
-    connect(listWidget, &QListWidget::currentRowChanged, this,       &RadioPlayer::onStationSelected);
-    connect(btnReconnect, &QPushButton::clicked, this,         &RadioPlayer::onReconnectStation);
+            this,       &RadioPlayer::onStationSelected);
+
+    // Кнопки управления станциями
+    connect(btnAdd,       &QPushButton::clicked,
+            this,         &RadioPlayer::onAddStation);
+    connect(btnRemove,    &QPushButton::clicked,
+            this,         &RadioPlayer::onRemoveStation);
+    connect(btnUpdate,    &QPushButton::clicked,
+            this,         &RadioPlayer::onUpdateStation);
+    connect(btnReconnect, &QPushButton::clicked,
+            this,         &RadioPlayer::onReconnectStation);
+
+    // Обновление списка, когда StationManager меняет данные
+    connect(m_stations, &StationManager::stationsChanged,
+            this,        &RadioPlayer::refreshStationList);
+
+    // ========== Системный трей ==========
+    connect(trayIcon, &QSystemTrayIcon::activated, this,
+            [=](QSystemTrayIcon::ActivationReason reason){
+                switch (reason) {
+                case QSystemTrayIcon::Trigger:   // одиночный клик
+                    showQuickPopup();
+                    break;
+                case QSystemTrayIcon::DoubleClick:// двойной клик
+                    showNormal();
+                    raise(); activateWindow();
+                    break;
+                default: break;
+                }
+            });
+
+    // ========== Быстрый popup ==========
+    connect(quickPopup, &QuickControlPopup::stationSelected,
+            this,       &RadioPlayer::onStationSelected);
+    connect(quickPopup, &QuickControlPopup::reconnectRequested,
+            this,       &RadioPlayer::onReconnectStation);
+    connect(quickPopup, &QuickControlPopup::volumeChanged,
+            this,       &RadioPlayer::onVolumeChanged);
 }
+
 
 
 

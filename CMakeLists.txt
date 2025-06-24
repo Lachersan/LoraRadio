@@ -30,6 +30,8 @@ add_executable(LoraRadio WIN32
         StationDialog.cpp
         StationDialog.h
         StationDialog.ui
+        QuickControlPopup.cpp
+        QuickControlPopup.h
 )
 target_link_libraries(LoraRadio
         Qt::Core

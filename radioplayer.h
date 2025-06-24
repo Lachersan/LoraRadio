@@ -14,6 +14,8 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include "stationmanager.h"
+#include "QuickControlPopup.h"
+
 
 QT_BEGIN_NAMESPACE
 class QSlider;
@@ -52,6 +54,10 @@ private:
     void setupTrayIcon();
     void setupConnections();
     void refreshStationList();
+    void showQuickPopup();
+
+
+
 
     // — поля
     QMediaPlayer   *player;
@@ -60,6 +66,8 @@ private:
     QSettings       settings;
 
     StationManager *m_stations;
+    QuickControlPopup *quickPopup;
+
 
     // GUI-блок “громкость”
     QSlider   *volumeSlider;
@@ -74,6 +82,7 @@ private:
     QPushButton *btnRemove;
     QPushButton *btnUpdate;
     QPushButton   *btnReconnect;
+
 
 };
 #endif // RADIOPLAYER_H
