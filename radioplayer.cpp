@@ -40,6 +40,17 @@ RadioPlayer::RadioPlayer(StationManager *stations, QWidget *parent)
     setupTrayIcon();
     setupConnections();
 
+    currentVolume = settings.value("audio/volume", 50).toInt();
+
+    // 2) апликуем её в audioOutput, в основной UI и в mini-окно
+    audioOutput->setVolume(currentVolume / 100.0);
+    volumeSlider->setValue(currentVolume);
+    volumeSpin->setValue(currentVolume);
+    // quickPopup пока скрыто, но строим его заранее
+    quickPopup->setVolume(currentVolume);
+
+
+
     // Загружаем список и сразу выбираем первую
     refreshStationList();
     if (listWidget->count() > 0) {
@@ -131,13 +142,17 @@ void RadioPlayer::setupTrayIcon()
 void RadioPlayer::showQuickPopup()
 {
     if (!quickPopup) return;
+    // 1) сразу берём готовую currentVolume
+    quickPopup->setVolume(currentVolume);
+
+    // 2) позиционируем и показываем
     QPoint p = QCursor::pos();
-    int x = p.x() - quickPopup->width()/2;
-    int y = p.y() - quickPopup->height() - 10;
-    quickPopup->move(x, y);
+    quickPopup->move(p.x() - quickPopup->width()/2,
+                     p.y() - quickPopup->height() - 10);
     quickPopup->show();
     quickPopup->raise();
     quickPopup->setFocus(Qt::MouseFocusReason);
+
 }
 
 
@@ -191,6 +206,10 @@ void RadioPlayer::setupConnections()
             this,       &RadioPlayer::onReconnectStation);
     connect(quickPopup, &QuickControlPopup::volumeChanged,
             this,       &RadioPlayer::onVolumeChanged);
+
+
+
+
 }
 
 
@@ -272,18 +291,22 @@ void RadioPlayer::setStreamUrl(const QString &url) {
 
 
 void RadioPlayer::onVolumeChanged(int value) {
-    // Устанавливаем громкость (0.0–1.0)
-    qreal vol = value / qreal(100);
-    audioOutput->setVolume(vol);
+    // сохраняем новый уровень
+    currentVolume = value;
+    settings.setValue("audio/volume", currentVolume);
 
-    // Сохраняем новое значение
-    settings.setValue("audio/volume", value);
+    // апликуем в плеер
+    audioOutput->setVolume(currentVolume / 100.0);
 
-    // Обновляем оба виджета
-    if (volumeSlider->value() != value)
-        volumeSlider->setValue(value);
-    if (volumeSpin->value() != value)
-        volumeSpin->setValue(value);
+    // синхронизируем главный UI
+    volumeSlider->setValue(currentVolume);
+    volumeSpin->setValue(currentVolume);
+
+    // если мини-окно открыто — обновляем и его
+    if (quickPopup->isVisible())
+        quickPopup->setVolume(currentVolume);
+
+
 }
 
 void RadioPlayer::closeEvent(QCloseEvent *event) {

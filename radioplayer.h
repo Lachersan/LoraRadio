@@ -46,6 +46,8 @@ private slots:
     void onUpdateStation();
     void onVolumeChanged(int value);
     void onReconnectStation();
+    void showQuickPopup();
+
 
 
 private:
@@ -54,9 +56,7 @@ private:
     void setupTrayIcon();
     void setupConnections();
     void refreshStationList();
-    void showQuickPopup();
-
-
+    int currentVolume = 3;
 
 
     // — поля
