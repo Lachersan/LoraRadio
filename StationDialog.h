@@ -1,7 +1,8 @@
+// StationDialog.h
 #pragma once
 
 #include <QDialog>
-#include "stationmanager.h"
+#include "stationmanager.h"    // где определён struct Station
 
 namespace Ui {
     class StationDialog;
@@ -11,12 +12,13 @@ class StationDialog : public QDialog {
     Q_OBJECT
 
 public:
+    // Конструктор для «Создать новую»
     explicit StationDialog(QWidget *parent = nullptr);
-    // конструктор для редактирования существующей станции
+    // Конструктор для «Правка существующей»
     explicit StationDialog(const Station &st, QWidget *parent = nullptr);
     ~StationDialog();
 
-    // Получить отредактированные данные
+    // Получить данные, введённые пользователем
     Station station() const;
 
 private:
