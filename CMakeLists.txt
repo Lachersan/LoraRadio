@@ -1,3 +1,5 @@
+include(FetchContent)
+
 cmake_minimum_required(VERSION 3.31)
 project(LoraRadio)
 
@@ -7,6 +9,9 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 set(CMAKE_PREFIX_PATH "F:/Qt/6.9.0/mingw_64")
+set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
+
+add_subdirectory(QtAwesome)
 
 find_package(Qt6 COMPONENTS
         Core
@@ -14,6 +19,7 @@ find_package(Qt6 COMPONENTS
         Widgets
         Multimedia
         REQUIRED)
+
 
 add_executable(LoraRadio WIN32
         main.cpp
@@ -32,13 +38,18 @@ add_executable(LoraRadio WIN32
         StationDialog.ui
         QuickControlPopup.cpp
         QuickControlPopup.h
+        IconProvider.h
 )
 target_link_libraries(LoraRadio
+
         Qt::Core
         Qt::Gui
         Qt::Widgets
         Qt::Multimedia
+        QtAwesome
+
 )
+
 
 set(WINDEPLOYQT_PATH "F:/Qt/6.9.0/mingw_64/bin/windeployqt.exe")
 
