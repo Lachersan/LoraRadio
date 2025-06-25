@@ -1,12 +1,13 @@
 #pragma once
-#include <QtAwesome.h>
+#include <QApplication>
+#include <qtawesome.h>
 
 inline fa::QtAwesome& A() {
-    static fa::QtAwesome inst(qApp);
-    static bool inited = [&]() {
-        inst.initFontAwesome();      // подгрузка Font Awesome Free
-        // inst.initMaterialDesign(); // при желании других наборов
-        return true;
-    }();
-    return inst;
+    static fa::QtAwesome aw{ qApp };
+    static bool inited = false;
+    if (!inited) {
+        aw.initFontAwesome();  // Solid-иконки
+        inited = true;
+    }
+    return aw;
 }

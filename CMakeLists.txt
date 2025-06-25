@@ -39,6 +39,7 @@ add_executable(LoraRadio WIN32
         QuickControlPopup.cpp
         QuickControlPopup.h
         IconProvider.h
+        IconButton.h
 )
 target_link_libraries(LoraRadio
 

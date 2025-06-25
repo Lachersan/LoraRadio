@@ -1,6 +1,6 @@
 #include "radioplayer.h"
 #include "StationDialog.h"
-
+#include "IconButton.h"
 
 #include <QAudioOutput>
 #include <QCloseEvent>
@@ -77,27 +77,62 @@ void RadioPlayer::setupUi()
     volumeSlider->setValue(settings.value("audio/volume",5).toInt());
     volumeSpin->setValue(settings.value("audio/volume",5).toInt());
 
-    // Список станций и форма управления
+    // Список станций
     listWidget = new QListWidget;
-    btnAdd     = new QPushButton(tr("Добавить"));
-    btnRemove  = new QPushButton(tr("Удалить"));
-    btnUpdate  = new QPushButton(tr("Изменить"));
-    btnReconnect = new QPushButton(tr("Переподключить"));
+
+    // Размер иконок и цвета
+    const QSize icoSize(24, 24);
+    QColor addCol       = QColor("#4caf50");
+    QColor removeCol    = QColor("#e53935");
+    QColor updateCol    = QColor("#0288d1");
+    QColor reconnectCol = QColor("#ffb300");
+
+    btnAdd = new IconButton(
+       "light plus",                     // эквивалент fa::fa_plus
+       icoSize,
+       {{"color", "#505050"}},
+       tr("Добавить станцию"),
+       this
+   );
+
+    btnRemove = new IconButton(
+        "trash",                    // эквивалент fa::fa_trash
+        icoSize,
+        {{"color", "#505050"}},
+        tr("Удалить станцию"),
+        this
+    );
+
+    btnUpdate = new IconButton(
+        "edit",                     // эквивалент fa::fa_edit
+        icoSize,
+        {{"color", "#505050"}},
+        tr("Изменить станцию"),
+        this
+    );
+
+    btnReconnect = new IconButton(
+        "sync-alt",                 // эквивалент fa::fa_sync_alt
+        icoSize,
+        {{"color", "#505050"}},
+        tr("Переподключить"),
+        this
+    );
 
 
-
-
+    // Размещаем кнопки в строке
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAdd);
     btnLayout->addWidget(btnRemove);
     btnLayout->addWidget(btnUpdate);
     btnLayout->addWidget(btnReconnect);
 
+    // Левая панель со списком и кнопками
     QVBoxLayout *leftPanel = new QVBoxLayout;
     leftPanel->addWidget(listWidget);
     leftPanel->addLayout(btnLayout);
 
-    // Собираем всё вместе
+    // Главное окно: слева список+кнопки, справа громкость
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addLayout(leftPanel);
     mainLayout->addLayout(volumeLayout);
@@ -106,6 +141,7 @@ void RadioPlayer::setupUi()
     setWindowTitle(tr("Lofi Radio Player"));
     setWindowIcon(QIcon(":/icons/icon.png"));
 }
+
 
 void RadioPlayer::setupTrayIcon()
 {

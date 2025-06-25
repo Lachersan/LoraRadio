@@ -15,6 +15,8 @@
 #include <QVBoxLayout>
 #include "stationmanager.h"
 #include "QuickControlPopup.h"
+#include "IconButton.h"
+
 
 
 QT_BEGIN_NAMESPACE
@@ -78,10 +80,11 @@ private:
     QListWidget *listWidget;
     QLineEdit   *editName;
     QLineEdit   *editUrl;
-    QPushButton *btnAdd;
-    QPushButton *btnRemove;
-    QPushButton *btnUpdate;
-    QPushButton   *btnReconnect;
+    IconButton *btnAdd;
+    IconButton *btnRemove;
+    IconButton *btnUpdate;
+    IconButton *btnReconnect;
+
 
 
 };
