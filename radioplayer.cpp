@@ -142,6 +142,10 @@ void RadioPlayer::setupTrayIcon()
 void RadioPlayer::showQuickPopup()
 {
     if (!quickPopup) return;
+
+    // Обновим список на всякий случай
+    quickPopup->updateStations();
+
     // 1) сразу берём готовую currentVolume
     quickPopup->setVolume(currentVolume);
 
@@ -183,6 +187,20 @@ void RadioPlayer::setupConnections()
     // Обновление списка, когда StationManager меняет данные
     connect(m_stations, &StationManager::stationsChanged,
             this,        &RadioPlayer::refreshStationList);
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this,
+   [=](QSystemTrayIcon::ActivationReason reason){
+     switch (reason) {
+     case QSystemTrayIcon::Trigger:
+             showQuickPopup();  break;
+         case QSystemTrayIcon::DoubleClick:
+             quickPopup->hide();
+             showNormal(); raise(); activateWindow();
+             break;
+         default: break;
+         }
+    });
+
 
     // ========== Системный трей ==========
     connect(trayIcon, &QSystemTrayIcon::activated, this,

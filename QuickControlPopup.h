@@ -16,6 +16,7 @@ public:
     explicit QuickControlPopup(StationManager *stations, QWidget *parent = nullptr);
 public slots:
     void setVolume(int value);
+    void updateStations();
 
     signals:
     void stationSelected(int index);
@@ -23,6 +24,7 @@ public slots:
     void volumeChanged(int value);
 
 private:
+    StationManager *m_stations;
     QListWidget *listWidget;
     QPushButton *btnReconnect;
     QSlider     *volumeSlider;

@@ -2,71 +2,83 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QSlider>
+#include <QSpinBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include "stationmanager.h"
 
 QuickControlPopup::QuickControlPopup(StationManager *stations, QWidget *parent)
   : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint)
+  , m_stations(stations)
 {
-    // наполовину прозрачный фон
-    setWindowOpacity(1);
+    setWindowOpacity(0.95);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
-    // создаём контролы
     listWidget   = new QListWidget(this);
     btnReconnect = new QPushButton(tr("Переподкл."), this);
     volumeSlider = new QSlider(Qt::Horizontal, this);
     volumeSlider->setRange(0, 100);
-    volumeSpin = new QSpinBox(this);       // создаём спинбокс
 
+    volumeSpin = new QSpinBox(this);
+    volumeSpin->setRange(0, 100);
+    volumeSpin->setFixedWidth(50);
 
-    // заполняем список
-    for (auto &st : stations->stations())
-        listWidget->addItem(st.name);
-
-    auto *volLayout = new QHBoxLayout;
-    volLayout->setContentsMargins(0,0,0,0);
-    volLayout->addWidget(volumeSlider);
-    volLayout->addWidget(volumeSpin);
-
-    // общий вертикальный лэйаут
-    auto *lay = new QVBoxLayout(this);
-    lay->setContentsMargins(5,5,5,5);
-    lay->addWidget(listWidget);
-    lay->addWidget(btnReconnect);
-    lay->addLayout(volLayout);
-
-
-
-    // синхронизируем ползунок и спинбокс:
+    // синхронизируем слайдер и спинбокс
     connect(volumeSlider, &QSlider::valueChanged,
             volumeSpin,   QOverload<int>::of(&QSpinBox::setValue));
     connect(volumeSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
             volumeSlider, &QSlider::setValue);
     connect(volumeSlider, &QSlider::valueChanged,
-        this,         &QuickControlPopup::volumeChanged);
+            this,         &QuickControlPopup::volumeChanged);
 
-
-
-    // сигналы наружу
+    // список
     connect(listWidget, &QListWidget::currentRowChanged,
             this,       &QuickControlPopup::stationSelected);
     connect(btnReconnect, &QPushButton::clicked,
-            this,       &QuickControlPopup::reconnectRequested);
+            this,         &QuickControlPopup::reconnectRequested);
 
+    // подключаем сигнал менеджера → обновление списка
+    connect(m_stations, &StationManager::stationsChanged,
+            this,       &QuickControlPopup::updateStations);
 
+    // один раз заполним
+    updateStations();
+
+    // раскладка
+    auto *volLayout = new QHBoxLayout;
+    volLayout->setContentsMargins(0,0,0,0);
+    volLayout->addWidget(volumeSlider);
+    volLayout->addWidget(volumeSpin);
+
+    auto *lay = new QVBoxLayout(this);
+    lay->setContentsMargins(5,5,5,5);
+    lay->addWidget(listWidget);
+    lay->addWidget(btnReconnect);
+    lay->addLayout(volLayout);
 }
+
+void QuickControlPopup::updateStations()
+{
+    // сохраняем текущий выбор, чтобы восстановить
+    int cur = listWidget->currentRow();
+
+    listWidget->clear();
+    for (auto &st : m_stations->stations())
+        listWidget->addItem(st.name);
+
+    // восстанавливаем выбор, если возможно
+    if (cur >= 0 && cur < listWidget->count())
+        listWidget->setCurrentRow(cur);
+}
+
 void QuickControlPopup::setVolume(int value)
 {
-    // сразу обновляем оба контрола без сигнала volumeChanged
     volumeSlider->blockSignals(true);
-    volumeSpin->blockSignals(true);
+    volumeSpin->  blockSignals(true);
 
     volumeSlider->setValue(value);
-    volumeSpin->setValue(value);
+    volumeSpin->  setValue(value);
 
-    volumeSpin->blockSignals(false);
+    volumeSpin->  blockSignals(false);
     volumeSlider->blockSignals(false);
 }
-
