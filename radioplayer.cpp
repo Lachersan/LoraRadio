@@ -1,6 +1,7 @@
 #include "radioplayer.h"
 #include "StationDialog.h"
 #include "IconButton.h"
+#include "AutoStartRegistry.h"
 
 #include <QAudioOutput>
 #include <QCloseEvent>
@@ -53,9 +54,12 @@ RadioPlayer::RadioPlayer(StationManager *stations, QWidget *parent)
 
     // Загружаем список и сразу выбираем первую
     refreshStationList();
-    if (listWidget->count() > 0) {
-        listWidget->setCurrentRow(0);         // вызовет onStationSelected()
-    } else {
+    int last = m_stations->lastStationIndex();   // новый метод в StationManager
+    if (last >= 0 && last < listWidget->count()) {
+        listWidget->setCurrentRow(last);
+    } else if (listWidget->count() > 0) {
+        listWidget->setCurrentRow(0);
+    }else {
         // Если список пуст – можно показать предупреждение
         qDebug() << "Station list is empty!";
     }
@@ -76,6 +80,7 @@ void RadioPlayer::setupUi()
     volumeLayout->addWidget(volumeSpin);
     volumeSlider->setValue(settings.value("audio/volume",5).toInt());
     volumeSpin->setValue(settings.value("audio/volume",5).toInt());
+
 
     // Список станций
     listWidget = new QListWidget;
@@ -147,10 +152,25 @@ void RadioPlayer::setupTrayIcon()
 {
     trayIcon = new QSystemTrayIcon(QIcon(":/icons/icon.png"), this);
 
-    // контекстное меню (правый клик)
+    // создаём контекстное меню
     auto *menu = new QMenu;
+
+    // пункт автозапуска
+    auto *autostartAction = new QAction(tr("Автозапуск"), this);
+    autostartAction->setCheckable(true);
+    bool autostartEnabled = settings.value("autostart/enabled", false).toBool();
+    autostartAction->setChecked(autostartEnabled);
+    connect(autostartAction, &QAction::toggled, this, [=](bool enabled){
+        settings.setValue("autostart/enabled", enabled);
+        AutoStartRegistry::setEnabled(enabled);
+    });
+
+    // добавляем действия в меню
     menu->addAction(tr("Показать"), this, &QWidget::showNormal);
-    menu->addAction(tr("Выход"),    qApp,  &QCoreApplication::quit);
+    menu->addAction(autostartAction);  // ← теперь переменная уже существует
+    menu->addSeparator();
+    menu->addAction(tr("Выход"), qApp, &QCoreApplication::quit);
+
     trayIcon->setContextMenu(menu);
     trayIcon->show();
 
@@ -159,21 +179,22 @@ void RadioPlayer::setupTrayIcon()
     quickPopup->setFixedSize(200, 150);
 
     connect(trayIcon, &QSystemTrayIcon::activated, this,
-      [=](QSystemTrayIcon::ActivationReason reason){
-        switch (reason) {
-        case QSystemTrayIcon::Trigger:      // одинарный клик
-                showQuickPopup();
-                break;
-            case QSystemTrayIcon::DoubleClick:  // двойной клик
-                quickPopup->hide();
-                showNormal();
-                raise(); activateWindow();
-                break;
-            default:
-                break;
+        [=](QSystemTrayIcon::ActivationReason reason){
+            switch (reason) {
+                case QSystemTrayIcon::Trigger:
+                    showQuickPopup();
+                    break;
+                case QSystemTrayIcon::DoubleClick:
+                    quickPopup->hide();
+                    showNormal();
+                    raise(); activateWindow();
+                    break;
+                default:
+                    break;
             }
         });
 }
+
 
 void RadioPlayer::showQuickPopup()
 {
@@ -206,9 +227,16 @@ void RadioPlayer::setupConnections()
     connect(volumeSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
             this,         &RadioPlayer::onVolumeChanged);
 
+
+
     // Выбор станции в списке
     connect(listWidget, &QListWidget::currentRowChanged,
             this,       &RadioPlayer::onStationSelected);
+
+    connect(listWidget, &QListWidget::currentRowChanged,
+        this, [=](int idx){m_stations->setLastStationIndex(idx);
+});
+
 
     // Кнопки управления станциями
     connect(btnAdd,       &QPushButton::clicked,
@@ -220,9 +248,11 @@ void RadioPlayer::setupConnections()
     connect(btnReconnect, &QPushButton::clicked,
             this,         &RadioPlayer::onReconnectStation);
 
+
     // Обновление списка, когда StationManager меняет данные
     connect(m_stations, &StationManager::stationsChanged,
             this,        &RadioPlayer::refreshStationList);
+
 
     connect(trayIcon, &QSystemTrayIcon::activated, this,
    [=](QSystemTrayIcon::ActivationReason reason){
@@ -367,3 +397,9 @@ void RadioPlayer::closeEvent(QCloseEvent *event) {
     hide();
     event->ignore();
 }
+void RadioPlayer::onAutostartToggled(bool enabled)
+{
+    settings.setValue("autostart/enabled", enabled);
+    AutoStartRegistry::setEnabled(enabled);
+}
+

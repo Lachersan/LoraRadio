@@ -1,10 +1,24 @@
 #include "AutoStartRegistry.h"
-#include <QDir>
-#include <QCoreApplication>
 #include <QSettings>
+#include <QCoreApplication>
+#include <QDir>
 
-void setAutoStartRegistry(bool enable) {
-    // Ключ для автозапуска текущего пользователя
+bool AutoStartRegistry::isEnabled()
+{
+#ifdef Q_OS_WIN
+    QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                  QSettings::NativeFormat);
+
+    const QString appName = QCoreApplication::applicationName();
+    return reg.contains(appName);
+#else
+    return false;
+#endif
+}
+
+void AutoStartRegistry::setEnabled(bool enable)
+{
+#ifdef Q_OS_WIN
     QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                   QSettings::NativeFormat);
 
@@ -14,10 +28,9 @@ void setAutoStartRegistry(bool enable) {
     );
 
     if (enable) {
-        // Включаем автозапуск
         reg.setValue(appName, "\"" + appPath + "\"");
     } else {
-        // Отключаем автозапуск
         reg.remove(appName);
     }
+#endif
 }

@@ -4,12 +4,23 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+
 StationManager::StationManager(const QString &jsonPath, QObject *parent)
     : QObject(parent)
-    , m_jsonPath("F:/Project/untitled/stations.json")
+    , m_jsonPath("F:/Project/untitled/stations.json"),
+    m_settings("MyApp", "LoraRadio")    // организация/приложение
+
 {
-    load();
+    if (load()) {
+        // после загрузки JSON читаем из QSettings сохранённый индекс
+        int idx = m_settings.value("player/lastIndex", -1).toInt();
+        if (idx >= 0 && idx < m_stations.size()) {
+            // сигнал, чтобы UI мог восстановить плейбек
+            emit lastStationIndexChanged(idx);
+        }
+    }
 }
+
 
 bool StationManager::load() {
     QFile f(m_jsonPath);
@@ -49,6 +60,24 @@ bool StationManager::save() const {
     f.close();
     return true;
 }
+
+int StationManager::lastStationIndex() const
+{
+    return m_settings.value("player/lastIndex", -1).toInt();
+}
+
+void StationManager::setLastStationIndex(int index)
+{
+    if (index < 0 || index >= m_stations.size())
+        index = -1;
+
+    if (lastStationIndex() == index)
+        return; // без изменения
+
+    m_settings.setValue("player/lastIndex", index);
+    emit lastStationIndexChanged(index);
+}
+
 
 void StationManager::addStation(const Station &st) {
     m_stations.append(st);

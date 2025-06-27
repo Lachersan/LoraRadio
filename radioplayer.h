@@ -19,6 +19,8 @@
 
 
 
+
+
 QT_BEGIN_NAMESPACE
 class QSlider;
 class QSpinBox;
@@ -49,6 +51,8 @@ private slots:
     void onVolumeChanged(int value);
     void onReconnectStation();
     void showQuickPopup();
+    void onAutostartToggled(bool enabled);
+
 
 
 
@@ -75,6 +79,7 @@ private:
     QSlider   *volumeSlider;
     QSpinBox  *volumeSpin;
     QHBoxLayout *volumeLayout;
+
 
     // GUI-блок “станции”
     QListWidget *listWidget;

@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QVector>
 #include <QString>
+#include <QSettings>
 
 struct Station {
     QString name;
@@ -18,6 +19,9 @@ public:
 
     const QVector<Station>& stations() const { return m_stations; }
 
+    int  lastStationIndex() const;
+    void setLastStationIndex(int index);
+
 public slots:
     bool load();                                 // загрузить из файла
     bool save() const;                           // сохранить в файл
@@ -30,8 +34,11 @@ public slots:
     void stationAdded(int index);
     void stationRemoved(int index);
     void stationUpdated(int index);
+    void lastStationIndexChanged(int index);
+
 
 private:
     QString m_jsonPath;
     QVector<Station> m_stations;
+    QSettings   m_settings;
 };

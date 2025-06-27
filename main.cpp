@@ -20,6 +20,6 @@ int main(int argc, char *argv[]) {
     RadioPlayer radio(&stations);
 
     radio.show();
-    setAutoStartRegistry(false);
+    AutoStartRegistry::setEnabled(false);
     return app.exec();
 }

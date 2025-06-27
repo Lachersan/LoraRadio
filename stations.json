@@ -2,5 +2,17 @@
     {
         "name": "Evil Anime",
         "url": "https://stream.laut.fm/evil-animefm"
+    },
+    {
+        "name": "Nightcoremusic",
+        "url": "https://stream.laut.fm/nightcoremusic"
+    },
+    {
+        "name": "Chillradioluka",
+        "url": "https://stream.laut.fm/chillradioluka"
+    },
+    {
+        "name": "Lofi",
+        "url": "https://stream.laut.fm/lofi"
     }
 ]
