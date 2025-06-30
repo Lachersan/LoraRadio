@@ -1,7 +1,10 @@
 #include "radioplayer.h"
 #include "StationDialog.h"
 #include "IconButton.h"
+
 #include "AutoStartRegistry.h"
+#include "fluent_icons.h"
+
 
 #include <QAudioOutput>
 #include <QCloseEvent>
@@ -18,11 +21,9 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QSystemTrayIcon>
-#include <QVBoxLayout>
 #include <QApplication>
 #include <QAction>
 #include <QCursor>
-
 
 RadioPlayer::RadioPlayer(StationManager *stations, QWidget *parent)
     : QWidget(parent),
@@ -93,12 +94,11 @@ void RadioPlayer::setupUi()
     QColor reconnectCol = QColor("#ffb300");
 
     btnAdd = new IconButton(
-       "light plus",                     // эквивалент fa::fa_plus
-       icoSize,
-       {{"color", "#505050"}},
-       tr("Добавить станцию"),
-       this
-   );
+    fluent_icons::ic_fluent_add_24_filled,
+    24,
+    QColor("#4caf50"),
+    tr("Добавить станцию"),
+    this);
 
     btnRemove = new IconButton(
         "trash",                    // эквивалент fa::fa_trash
@@ -213,91 +213,68 @@ void RadioPlayer::showQuickPopup()
     quickPopup->show();
     quickPopup->raise();
     quickPopup->setFocus(Qt::MouseFocusReason);
-
 }
-
-
 
 void RadioPlayer::setupConnections()
 {
-    // ========== Основное окно ==========
-    // Смена громкости из слайдера и spinbox
-    connect(volumeSlider, &QSlider::valueChanged,
-            this,         &RadioPlayer::onVolumeChanged);
-    connect(volumeSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
-            this,         &RadioPlayer::onVolumeChanged);
-
-
-
-    // Выбор станции в списке
-    connect(listWidget, &QListWidget::currentRowChanged,
-            this,       &RadioPlayer::onStationSelected);
-
-    connect(listWidget, &QListWidget::currentRowChanged,
-        this, [=](int idx){m_stations->setLastStationIndex(idx);
-});
-
-
-    // Кнопки управления станциями
-    connect(btnAdd,       &QPushButton::clicked,
-            this,         &RadioPlayer::onAddStation);
-    connect(btnRemove,    &QPushButton::clicked,
-            this,         &RadioPlayer::onRemoveStation);
-    connect(btnUpdate,    &QPushButton::clicked,
-            this,         &RadioPlayer::onUpdateStation);
-    connect(btnReconnect, &QPushButton::clicked,
-            this,         &RadioPlayer::onReconnectStation);
-
-
-    // Обновление списка, когда StationManager меняет данные
-    connect(m_stations, &StationManager::stationsChanged,
-            this,        &RadioPlayer::refreshStationList);
-
-
-    connect(trayIcon, &QSystemTrayIcon::activated, this,
-   [=](QSystemTrayIcon::ActivationReason reason){
-     switch (reason) {
-     case QSystemTrayIcon::Trigger:
-             showQuickPopup();  break;
-         case QSystemTrayIcon::DoubleClick:
-             quickPopup->hide();
-             showNormal(); raise(); activateWindow();
-             break;
-         default: break;
-         }
-    });
-
-
-    // ========== Системный трей ==========
-    connect(trayIcon, &QSystemTrayIcon::activated, this,
-            [=](QSystemTrayIcon::ActivationReason reason){
-                switch (reason) {
-                case QSystemTrayIcon::Trigger:   // одиночный клик
-                    showQuickPopup();
-                    break;
-                case QSystemTrayIcon::DoubleClick:// двойной клик
-                    showNormal();
-                    raise(); activateWindow();
-                    break;
-                default: break;
-                }
-            });
-
-    // ========== Быстрый popup ==========
-    connect(quickPopup, &QuickControlPopup::stationSelected,
-            this,       &RadioPlayer::onStationSelected);
-    connect(quickPopup, &QuickControlPopup::reconnectRequested,
-            this,       &RadioPlayer::onReconnectStation);
-    connect(quickPopup, &QuickControlPopup::volumeChanged,
-            this,       &RadioPlayer::onVolumeChanged);
-
-
-
-
+    setupVolumeConnections();
+    setupStationConnections();
+    setupStationManagerConnections();
+    setupControlButtonsConnections();
+    setupTrayConnections();
+    setupQuickPopupConnections();
 }
 
+void RadioPlayer::setupVolumeConnections()
+{
+    connect(volumeSlider, &QSlider::valueChanged,
+            this, &RadioPlayer::onVolumeChanged);
+    connect(volumeSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &RadioPlayer::onVolumeChanged);
+}
 
+void RadioPlayer::setupStationConnections()
+{
+    connect(listWidget, &QListWidget::currentRowChanged,
+            this,       &RadioPlayer::onStationSelected);
 
+    connect(listWidget, &QListWidget::currentRowChanged,
+            m_stations, &StationManager::setLastStationIndex);
+}
+
+void RadioPlayer::setupControlButtonsConnections()
+{
+    connect(btnAdd,       &QPushButton::clicked, this, &RadioPlayer::onAddStation);
+    connect(btnRemove,    &QPushButton::clicked, this, &RadioPlayer::onRemoveStation);
+    connect(btnUpdate,    &QPushButton::clicked, this, &RadioPlayer::onUpdateStation);
+    connect(btnReconnect, &QPushButton::clicked, this, &RadioPlayer::onReconnectStation);
+}
+
+void RadioPlayer::setupStationManagerConnections()
+{
+    connect(m_stations, &StationManager::stationsChanged,
+            this,        &RadioPlayer::refreshStationList);
+}
+
+void RadioPlayer::setupTrayConnections()
+{
+    connect(trayIcon, &QSystemTrayIcon::activated, this,
+        [=](QSystemTrayIcon::ActivationReason reason){
+            if (reason == QSystemTrayIcon::Trigger)
+                showQuickPopup();
+            else if (reason == QSystemTrayIcon::DoubleClick) {
+                quickPopup->hide();
+                showNormal(); raise(); activateWindow();
+            }
+        });
+}
+
+void RadioPlayer::setupQuickPopupConnections()
+{
+    connect(quickPopup, &QuickControlPopup::stationSelected,   this, &RadioPlayer::onStationSelected);
+    connect(quickPopup, &QuickControlPopup::reconnectRequested, this, &RadioPlayer::onReconnectStation);
+    connect(quickPopup, &QuickControlPopup::volumeChanged,      this, &RadioPlayer::onVolumeChanged);
+}
 
 void RadioPlayer::refreshStationList() {
     listWidget->clear();
@@ -312,7 +289,6 @@ void RadioPlayer::onStationSelected(int row) {
     setStreamUrl(st.url);   // сюда player->play() уже входит
 }
 
-
 void RadioPlayer::onAddStation() {
     StationDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
@@ -324,7 +300,6 @@ void RadioPlayer::onAddStation() {
         listWidget->setCurrentRow(m_stations->stations().size()-1);
     }
 }
-
 
 void RadioPlayer::onRemoveStation() {
     int row = listWidget->currentRow();

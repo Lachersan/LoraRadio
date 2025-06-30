@@ -17,10 +17,6 @@
 #include "QuickControlPopup.h"
 #include "IconButton.h"
 
-
-
-
-
 QT_BEGIN_NAMESPACE
 class QSlider;
 class QSpinBox;
@@ -61,6 +57,12 @@ private:
     void setupUi();
     void setupTrayIcon();
     void setupConnections();
+    void setupVolumeConnections();
+    void setupStationConnections();
+    void setupStationManagerConnections();
+    void setupControlButtonsConnections();
+    void setupTrayConnections();
+    void setupQuickPopupConnections();
     void refreshStationList();
     int currentVolume = 3;
 

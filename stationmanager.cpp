@@ -5,10 +5,12 @@
 #include <QJsonObject>
 
 
+
+
 StationManager::StationManager(const QString &jsonPath, QObject *parent)
     : QObject(parent)
-    , m_jsonPath("F:/Project/untitled/stations.json"),
-    m_settings("MyApp", "LoraRadio")    // организация/приложение
+    , m_jsonPath("F:/Project/untitled/stations.json")
+    , m_settings("MyApp", "LoraRadio")
 
 {
     if (load()) {

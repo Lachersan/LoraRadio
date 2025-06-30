@@ -6,7 +6,7 @@ inline fa::QtAwesome& A() {
     static fa::QtAwesome aw{ qApp };
     static bool inited = false;
     if (!inited) {
-        aw.initFontAwesome();  // Solid-иконки
+        aw.initFontAwesome();
         inited = true;
     }
     return aw;

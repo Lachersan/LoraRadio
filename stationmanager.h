@@ -30,7 +30,7 @@ public slots:
     void updateStation(int index, const Station &st); // изменить
 
     signals:
-        void stationsChanged();                      // общий сигнал
+    void stationsChanged();                      // общий сигнал
     void stationAdded(int index);
     void stationRemoved(int index);
     void stationUpdated(int index);

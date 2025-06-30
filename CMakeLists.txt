@@ -30,6 +30,7 @@ add_executable(LoraRadio WIN32
         AutoStartRegistry.cpp
         AutoStartRegistry.h
         resources.qrc
+        fonts/fonts.qrc
         app.rc
         stationmanager.cpp
         stationmanager.h
@@ -40,6 +41,10 @@ add_executable(LoraRadio WIN32
         QuickControlPopup.h
         IconProvider.h
         IconButton.h
+        FontLoader.h
+        IconUtils.h
+        fluent_icons.h
+        IconButton.cpp
 )
 target_link_libraries(LoraRadio
 
