@@ -45,6 +45,8 @@ add_executable(LoraRadio WIN32
         IconUtils.h
         fluent_icons.h
         IconButton.cpp
+        MainWindow.cpp
+        MainWindow.h
 )
 target_link_libraries(LoraRadio
 

@@ -57,19 +57,30 @@ QuickControlPopup::QuickControlPopup(StationManager *stations, QWidget *parent)
     lay->addLayout(volLayout);
 }
 
+void QuickControlPopup::setCurrentStation(int index)
+{
+        if (index >= 0 && index < listWidget->count())
+                listWidget->setCurrentRow(index);
+}
+
 void QuickControlPopup::updateStations()
 {
-    // сохраняем текущий выбор, чтобы восстановить
-    int cur = listWidget->currentRow();
+        // блокируем все сигналы от listWidget, в том числе currentRowChanged
+        QSignalBlocker blocker(listWidget);
 
-    listWidget->clear();
-    for (auto &st : m_stations->stations())
-        listWidget->addItem(st.name);
+        // запомним старый индекс
+        int cur = listWidget->currentRow();
 
-    // восстанавливаем выбор, если возможно
-    if (cur >= 0 && cur < listWidget->count())
-        listWidget->setCurrentRow(cur);
+        listWidget->clear();
+        for (auto &st : m_stations->stations())
+                listWidget->addItem(st.name);
+
+        // восстановим выделение без триггера сигнала
+        if (cur >= 0 && cur < listWidget->count())
+                listWidget->setCurrentRow(cur);
+        // blocker автоматически разблокируется при выходе из функции
 }
+
 
 void QuickControlPopup::setVolume(int value)
 {

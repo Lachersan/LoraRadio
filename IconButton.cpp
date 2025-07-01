@@ -30,18 +30,8 @@ IconButton::IconButton(const QString& glyphUtf8,
 {
     setFlat(true);
 
-    // Вот здесь мы наконец грузим шрифт и логируем
     static QString fluentFamily = loadFluentIconsFont();
-    QMessageBox::critical(nullptr,
-                      tr("Ошибка"),
-                      tr("glyphUtf8 = \"%1\"").arg(glyphUtf8));
-    if (fluentFamily.isEmpty()) {
-        QMessageBox::critical(nullptr,
-            "Ошибка", "Не удалось загрузить FluentSystemIcons-Filled.ttf");
-        return;
-    }
 
-    // рисуем глиф
     QFont f(fluentFamily);
     f.setPixelSize(pixelSize);
     QSize sz(pixelSize + 4, pixelSize + 4);

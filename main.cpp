@@ -1,32 +1,16 @@
 #include <QApplication>
-
-#include "AutoStartRegistry.h"
-#include "radioplayer.h"
-#include "stationmanager.h"
-#include "IconProvider.h"
+#include "MainWindow.h"
+#include "StationManager.h"
 #include "FontLoader.h"
 
-
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
+    loadFluentIconsFont();
 
-    QString family = loadFluentIconsFont();
+    StationManager *stations = new StationManager("stations.json");
+    MainWindow w(stations);
+    w.show();
 
-
-    app.setStyleSheet(R"(
-      IconButton {
-        background-color: transparent;
-        border: none;
-      }
-
-    )");
-
-    A();
-    StationManager stations(qApp->applicationDirPath() + "/stations.json");
-    RadioPlayer radio(&stations);
-
-    radio.show();
-    AutoStartRegistry::setEnabled(false);
     return app.exec();
 }

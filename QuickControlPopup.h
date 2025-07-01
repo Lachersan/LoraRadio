@@ -15,6 +15,7 @@ class QuickControlPopup : public QWidget {
 public:
     explicit QuickControlPopup(StationManager *stations, QWidget *parent = nullptr);
 public slots:
+    void setCurrentStation(int index);
     void setVolume(int value);
     void updateStations();
 
