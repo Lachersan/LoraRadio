@@ -30,6 +30,7 @@ protected:
 private slots:
     void onStationsChanged();
     void onVolumeChanged(int value);
+    void onVolumeMuteClicked();
     void onAddClicked();
     void onRemoveClicked();
     void onUpdateClicked();

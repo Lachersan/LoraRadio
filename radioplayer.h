@@ -21,6 +21,8 @@ public slots:
     void updateStation(int index, const Station &st);
     void reconnectStation();
     void changeVolume(int value);
+    void setMuted(bool muted);
+    bool isMuted() const;
     void toggleAutostart(bool enabled);
     void togglePlayback();
     bool isPlaying() const;

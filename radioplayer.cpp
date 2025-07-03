@@ -103,6 +103,16 @@ void RadioPlayer::changeVolume(int value)
     emit volumeChanged(value);
 }
 
+void RadioPlayer::setMuted(bool muted)
+{
+    m_audio->setMuted(muted);
+}
+
+bool RadioPlayer::isMuted() const
+{
+    return m_audio->isMuted();
+}
+
 void RadioPlayer::toggleAutostart(bool enabled)
 {
     m_settings.setValue("autostart/enabled", enabled);
