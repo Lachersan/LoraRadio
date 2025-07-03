@@ -21,6 +21,11 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 
+qt_add_resources(QDARKSTYLE_RCC
+        /styles/style.qrc
+)
+
+
 add_executable(LoraRadio WIN32
         main.cpp
         radioplayer.cpp
@@ -47,6 +52,8 @@ add_executable(LoraRadio WIN32
         IconButton.cpp
         MainWindow.cpp
         MainWindow.h
+        styles/style.qrc
+
 )
 target_link_libraries(LoraRadio
 

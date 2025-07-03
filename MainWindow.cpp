@@ -5,7 +5,6 @@
 #include "StationDialog.h"
 #include "QuickControlPopup.h"
 #include "fluent_icons.h"
-
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>
@@ -18,6 +17,8 @@
 #include <QCursor>
 #include <QCloseEvent>
 
+using namespace fluent_icons;
+
 MainWindow::MainWindow(StationManager *stations, QWidget *parent)
     : QMainWindow(parent),
       m_stations(stations),
@@ -28,13 +29,11 @@ MainWindow::MainWindow(StationManager *stations, QWidget *parent)
     setupTray();
     setupConnections();
     onStationsChanged();
-    onStationsChanged();
 
     QSettings s("MyApp", "LoraRadio");
     int vol = s.value("audio/volume", 5).toInt();
     m_volumeSlider->setValue(vol);
     m_volumeSpin->setValue(vol);
-
 
     setWindowTitle("LoraRadio");
     setWindowIcon(QIcon(":/icons/icon.png"));
@@ -49,11 +48,39 @@ void MainWindow::setupUi()
     m_volumeSlider->setRange(0, 100);
     m_volumeSpin->setRange(0, 100);
 
-    const QSize icoSize(24,24);
-    m_btnAdd       = new IconButton(fluent_icons::ic_fluent_add_circle_28_filled, 32, Qt::white, tr("Добавить"), this);
-    m_btnRemove    = new IconButton("trash", icoSize, {{"color","#FFF"}}, tr("Удалить"), this);
-    m_btnUpdate    = new IconButton("edit", icoSize, {{"color","#FFF"}}, tr("Изменить"), this);
-    m_btnReconnect = new IconButton("sync-alt", icoSize, {{"color","#FFF"}}, tr("Переподключить"), this);
+    const QSize icoSize(32,32);
+
+    m_btnAdd = new IconButton(
+    ic_fluent_add_circle_32_filled,
+    32,
+    QColor("#FFF"),
+    tr("Добавить"),
+    this
+    );
+
+    m_btnRemove = new IconButton(
+    ic_fluent_delete_32_filled,
+        32,
+        QColor("#FFF"),
+        tr("Удалить"),
+        this
+    );
+
+    m_btnUpdate = new IconButton(
+    ic_fluent_edit_32_filled,
+        32,
+        QColor("#FFF"),
+        tr("Изменить"),
+        this
+    );
+
+    m_btnReconnect = new IconButton(
+        ic_fluent_arrow_clockwise_32_filled,
+        32,
+        QColor("#FFF"),
+        tr("Переподключить"),
+        this
+    );
 
     auto *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(m_btnAdd);

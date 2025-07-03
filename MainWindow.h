@@ -2,6 +2,8 @@
 
 #include <QMainWindow>
 #include <QSystemTrayIcon>
+
+#include "fluent_icons.h"
 #include "StationManager.h"
 #include "RadioPlayer.h"
 #include "QuickControlPopup.h"

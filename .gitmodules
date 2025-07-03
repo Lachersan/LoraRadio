@@ -1,0 +1,3 @@
+[submodule "external/QDarkStyleSheet"]
+	path = external/QDarkStyleSheet
+	url = https://github.com/ColinDuquesnoy/QDarkStyleSheet.git

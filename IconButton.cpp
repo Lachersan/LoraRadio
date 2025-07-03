@@ -30,6 +30,8 @@ IconButton::IconButton(const QString& glyphUtf8,
 {
     setFlat(true);
 
+
+
     static QString fluentFamily = loadFluentIconsFont();
 
     QFont f(fluentFamily);

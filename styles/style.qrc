@@ -1,0 +1,12 @@
+<RCC>
+    <!-- префикс – часть пути после :/ -->
+    <qresource prefix="/styles">
+        <!-- сам файл стиля -->
+        <file>darkstyle.qss</file>
+        <!-- если в QSS у вас есть картинки, можно добавить их сюда -->
+        <!--
+        <file>rc/arrow-down.png</file>
+        <file>rc/arrow-up.png</file>
+        -->
+    </qresource>
+</RCC>
