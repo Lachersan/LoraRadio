@@ -11,15 +11,12 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_PREFIX_PATH "F:/Qt/6.9.0/mingw_64")
 set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 
-add_subdirectory(QtAwesome)
-
 find_package(Qt6 COMPONENTS
         Core
         Gui
         Widgets
         Multimedia
         REQUIRED)
-
 
 qt_add_resources(QDARKSTYLE_RCC
         /styles/style.qrc
@@ -44,7 +41,6 @@ add_executable(LoraRadio WIN32
         StationDialog.ui
         QuickControlPopup.cpp
         QuickControlPopup.h
-        IconProvider.h
         IconButton.h
         FontLoader.h
         IconUtils.h
@@ -56,13 +52,10 @@ add_executable(LoraRadio WIN32
 
 )
 target_link_libraries(LoraRadio
-
         Qt::Core
         Qt::Gui
         Qt::Widgets
         Qt::Multimedia
-        QtAwesome
-
 )
 
 

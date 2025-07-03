@@ -1,4 +1,3 @@
-
 class AutoStartRegistry {
 public:
     static bool isEnabled();
