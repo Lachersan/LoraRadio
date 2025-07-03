@@ -2,12 +2,9 @@
 
 #include <QMainWindow>
 #include <QSystemTrayIcon>
-
-#include "fluent_icons.h"
 #include "StationManager.h"
 #include "RadioPlayer.h"
 #include "QuickControlPopup.h"
-
 
 class StationManager;
 class RadioPlayer;
@@ -37,6 +34,9 @@ private slots:
     void onRemoveClicked();
     void onUpdateClicked();
     void onReconnectClicked();
+    void onPlayClicked();
+    void onNextClicked();
+    void onPrevClicked();
     void onTrayActivated(QSystemTrayIcon::ActivationReason);
 
 private:
@@ -63,6 +63,4 @@ private:
     QSystemTrayIcon  *m_trayIcon;
     QAction          *m_autostartAction;
     QPoint m_dragPosition;
-
-
 };

@@ -22,6 +22,8 @@ public slots:
     void reconnectStation();
     void changeVolume(int value);
     void toggleAutostart(bool enabled);
+    void togglePlayback();
+    bool isPlaying() const;
 
     signals:
     void stationsChanged(const QStringList &names);
@@ -35,7 +37,6 @@ private:
     QSettings          m_settings;
     int                m_currentVolume = 50;
     int m_currentIndex = -1;
-
 
     void emitStationList();
 };

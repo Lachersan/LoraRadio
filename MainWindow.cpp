@@ -240,19 +240,25 @@ void MainWindow::setupTray()
 
 void MainWindow::setupConnections()
 {
+    connect(m_btnClose,    &QPushButton::clicked, this, &MainWindow::close);
+    connect(m_btnMinimize, &QPushButton::clicked, this, &MainWindow::showMinimized);
+
     connect(m_radio, &RadioPlayer::stationsChanged, this,    &MainWindow::onStationsChanged);
     connect(m_listWidget, &QListWidget::currentRowChanged, m_radio, &RadioPlayer::selectStation);
 
     connect(m_volumeSlider, &QSlider::valueChanged, m_radio, &RadioPlayer::changeVolume);
     connect(m_volumeSpin, QOverload<int>::of(&QSpinBox::valueChanged), m_radio, &RadioPlayer::changeVolume);
     connect(m_radio, &RadioPlayer::volumeChanged, this,   &MainWindow::onVolumeChanged);
-    connect(m_btnClose,    &QPushButton::clicked, this, &MainWindow::close);
-    connect(m_btnMinimize, &QPushButton::clicked, this, &MainWindow::showMinimized);
 
     connect(m_btnAdd, &QPushButton::clicked, this, &MainWindow::onAddClicked);
     connect(m_btnRemove, &QPushButton::clicked, this, &MainWindow::onRemoveClicked);
     connect(m_btnUpdate, &QPushButton::clicked, this, &MainWindow::onUpdateClicked);
+
     connect(m_btnReconnect, &QPushButton::clicked, this, &MainWindow::onReconnectClicked);
+    connect(m_btnPlay, &QPushButton::clicked, this, &MainWindow::onPlayClicked);
+    connect(m_btnNext,      &QPushButton::clicked, this, &MainWindow::onNextClicked);
+    connect(m_btnPrev,      &QPushButton::clicked, this, &MainWindow::onPrevClicked);
+
 }
 
 
@@ -297,6 +303,33 @@ void MainWindow::onUpdateClicked()
     if (dlg.exec() == QDialog::Accepted)
         m_radio->updateStation(idx, dlg.station());
 }
+
+void MainWindow::onPrevClicked()
+{
+    int index = m_listWidget->currentRow();
+    if (index > 0)
+    {
+        m_listWidget->setCurrentRow(index - 1);
+        onPlayClicked();
+    }
+}
+
+void MainWindow::onPlayClicked()
+{
+    m_radio->togglePlayback();
+}
+
+void MainWindow::onNextClicked()
+{
+    int index = m_listWidget->currentRow();
+    if (index < m_listWidget->count() - 1)
+    {
+        m_listWidget->setCurrentRow(index + 1);
+        onPlayClicked();
+    }
+}
+
+
 
 void MainWindow::onReconnectClicked()
 {

@@ -72,6 +72,21 @@ void RadioPlayer::updateStation(int index, const Station &st)
     m_stations->save();
 }
 
+void RadioPlayer::togglePlayback()
+{
+    if (m_player->playbackState() == QMediaPlayer::PlayingState) {
+        m_player->pause();
+    } else if (m_currentIndex >= 0) {
+        m_player->play(); // продолжает текущую
+    }
+}
+
+bool RadioPlayer::isPlaying() const
+{
+    return m_player->playbackState() == QMediaPlayer::PlayingState;
+}
+
+
 void RadioPlayer::reconnectStation()
 {
     if (m_currentIndex < 0)
