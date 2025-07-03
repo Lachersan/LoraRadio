@@ -26,6 +26,8 @@ public:
     explicit MainWindow(StationManager *stations, QWidget *parent = nullptr);
 
 protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
@@ -42,11 +44,17 @@ private:
     void setupTray();
     void setupConnections();
 
+    IconButton       *m_btnClose;
+    IconButton       *m_btnMinimize;
     StationManager   *m_stations;
     RadioPlayer      *m_radio;
     QListWidget      *m_listWidget;
     QSlider          *m_volumeSlider;
     QSpinBox         *m_volumeSpin;
+    IconButton       *m_volumeMute;
+    IconButton       *m_btnPlay;
+    IconButton       *m_btnNext;
+    IconButton       *m_btnPrev;
     IconButton       *m_btnAdd;
     IconButton       *m_btnRemove;
     IconButton       *m_btnUpdate;
@@ -54,5 +62,7 @@ private:
     QuickControlPopup* m_quickPopup;
     QSystemTrayIcon  *m_trayIcon;
     QAction          *m_autostartAction;
+    QPoint m_dragPosition;
+
 
 };

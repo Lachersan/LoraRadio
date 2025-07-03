@@ -11,13 +11,14 @@
 #include <QMenuBar>
 #include <QSystemTrayIcon>
 #include <QAction>
-#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QCursor>
 #include <QCloseEvent>
-
+#include <QLabel>
+#include <QPainterPath>
 using namespace fluent_icons;
+
 
 MainWindow::MainWindow(StationManager *stations, QWidget *parent)
     : QMainWindow(parent),
@@ -25,6 +26,13 @@ MainWindow::MainWindow(StationManager *stations, QWidget *parent)
       m_radio(new RadioPlayer(stations, this))
 
 {
+
+    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(Qt::FramelessWindowHint);
+
+
+    this->setWindowOpacity(0.9);
+
     setupUi();
     setupTray();
     setupConnections();
@@ -50,6 +58,22 @@ void MainWindow::setupUi()
 
     const QSize icoSize(32,32);
 
+    m_btnClose = new IconButton(
+    ic_fluent_share_screen_stop_28_filled,
+    20,
+    QColor("#FFF"),
+    tr("Добавить"),
+    this
+    );
+
+    m_btnMinimize = new IconButton(
+    ic_fluent_window_multiple_20_filled,
+    20,
+    QColor("#FFF"),
+    tr("Удалить"),
+    this
+    );
+
     m_btnAdd = new IconButton(
     ic_fluent_add_circle_32_filled,
     32,
@@ -74,6 +98,40 @@ void MainWindow::setupUi()
         this
     );
 
+    m_btnPrev = new IconButton(
+    ic_fluent_previous_32_filled,
+    32,
+    QColor("#FFF"),
+    tr("Добавить"),
+    this
+    );
+
+    m_btnPlay = new IconButton(
+    ic_fluent_play_circle_48_filled,
+    32,
+    QColor("#FFF"),
+    tr("Добавить"),
+    this
+    );
+
+    m_btnNext = new IconButton(
+    ic_fluent_next_32_filled,
+    32,
+    QColor("#FFF"),
+    tr("Добавить"),
+    this
+    );
+
+    m_volumeMute = new IconButton(
+    ic_fluent_speaker_2_32_filled,
+        32,
+        QColor("#FFF"),
+        tr("Удалить"),
+        this
+    );
+
+
+
     m_btnReconnect = new IconButton(
         ic_fluent_arrow_clockwise_32_filled,
         32,
@@ -82,26 +140,66 @@ void MainWindow::setupUi()
         this
     );
 
-    auto *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(m_btnAdd);
-    btnLayout->addWidget(m_btnRemove);
-    btnLayout->addWidget(m_btnUpdate);
-    btnLayout->addWidget(m_btnReconnect);
+    auto *stationButtons = new QHBoxLayout;
+    stationButtons->addWidget(m_btnAdd);
+    stationButtons->addWidget(m_btnUpdate);
+    stationButtons->addWidget(m_btnRemove);
+    stationButtons->addStretch();
+    m_btnClose->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_btnMinimize->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_btnClose->setProperty("role", "system");
+    m_btnMinimize->setProperty("role", "system");
 
-    auto *leftPanel = new QVBoxLayout;
-    leftPanel->addWidget(m_listWidget);
-    leftPanel->addLayout(btnLayout);
 
-    auto *volLayout = new QHBoxLayout;
-    volLayout->addWidget(m_volumeSlider);
-    volLayout->addWidget(m_volumeSpin);
+    auto *modeLayout = new QHBoxLayout;
+    modeLayout->addStretch();
+    modeLayout->addWidget(m_btnMinimize);
+    modeLayout->addWidget(m_btnClose);
+    modeLayout->setSpacing(4);
+
+
+
+
+    auto *modePanel = new QWidget;
+    modePanel->setLayout(modeLayout);
+    modePanel->setFixedHeight(32);
+
+
+    auto *stationPanel = new QVBoxLayout;
+    stationPanel->addWidget(m_listWidget, 1);
+    stationPanel->addLayout(stationButtons);
+
+    auto *centerPanel = new QWidget;
+    centerPanel->setLayout(stationPanel);
+
+
+    auto *controlLayout = new QHBoxLayout;
+    controlLayout->addWidget(m_btnReconnect);
+    controlLayout->addWidget(m_btnPrev);
+    controlLayout->addWidget(m_btnPlay);
+    controlLayout->addWidget(m_btnNext);
+    controlLayout->addStretch();
+    controlLayout->addWidget(m_volumeMute);
+    controlLayout->addWidget(m_volumeSpin);
+    controlLayout->addWidget(m_volumeSlider);
+
+    auto *controlPanel = new QWidget;
+    controlPanel->setLayout(controlLayout);
+
+    auto *mainLayout = new QVBoxLayout;
+    mainLayout->addWidget(modePanel);
+    mainLayout->addWidget(centerPanel, 1);
+    mainLayout->addWidget(controlPanel);
 
     auto *central = new QWidget;
-    auto *mainL   = new QHBoxLayout(central);
-    mainL->addLayout(leftPanel);
-    mainL->addLayout(volLayout);
-
+    central->setLayout(mainLayout);
     setCentralWidget(central);
+    mainLayout->setContentsMargins(0,0,0,0 );
+
+
+    centerPanel->setStyleSheet("background-color: #000000;");
+
+
 }
 
 void MainWindow::setupTray()
@@ -142,17 +240,14 @@ void MainWindow::setupTray()
 
 void MainWindow::setupConnections()
 {
-    connect(m_radio, &RadioPlayer::stationsChanged,
-            this,    &MainWindow::onStationsChanged);
-    connect(m_listWidget, &QListWidget::currentRowChanged,
-            m_radio, &RadioPlayer::selectStation);
+    connect(m_radio, &RadioPlayer::stationsChanged, this,    &MainWindow::onStationsChanged);
+    connect(m_listWidget, &QListWidget::currentRowChanged, m_radio, &RadioPlayer::selectStation);
 
-    connect(m_volumeSlider, &QSlider::valueChanged,
-            m_radio,           &RadioPlayer::changeVolume);
-    connect(m_volumeSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-        m_radio,        &RadioPlayer::changeVolume);
-    connect(m_radio, &RadioPlayer::volumeChanged,
-            this,   &MainWindow::onVolumeChanged);
+    connect(m_volumeSlider, &QSlider::valueChanged, m_radio, &RadioPlayer::changeVolume);
+    connect(m_volumeSpin, QOverload<int>::of(&QSpinBox::valueChanged), m_radio, &RadioPlayer::changeVolume);
+    connect(m_radio, &RadioPlayer::volumeChanged, this,   &MainWindow::onVolumeChanged);
+    connect(m_btnClose,    &QPushButton::clicked, this, &MainWindow::close);
+    connect(m_btnMinimize, &QPushButton::clicked, this, &MainWindow::showMinimized);
 
     connect(m_btnAdd, &QPushButton::clicked, this, &MainWindow::onAddClicked);
     connect(m_btnRemove, &QPushButton::clicked, this, &MainWindow::onRemoveClicked);
@@ -236,6 +331,19 @@ void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
             break;
     }
 }
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+        m_dragPosition = event->globalPos() - frameGeometry().topLeft();
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (event->buttons() & Qt::LeftButton)
+        move(event->globalPos() - m_dragPosition);
+}
+
 
 
 void MainWindow::closeEvent(QCloseEvent *event)
