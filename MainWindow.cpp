@@ -26,10 +26,8 @@ MainWindow::MainWindow(StationManager *stations, QWidget *parent)
       m_radio(new RadioPlayer(stations, this))
 
 {
-
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
-
 
     this->setWindowOpacity(0.9);
 
@@ -137,14 +135,27 @@ void MainWindow::setupUi()
     );
 
     auto *modeLayout = new QHBoxLayout;
+    modeTabBar = new QTabBar();
+    modeTabBar->addTab(tr("Radio"));
+    modeTabBar->addTab(tr("YouTube"));
+    modeTabBar->setExpanding(false);
+    modeTabBar->setMovable(false);
+
+
+    modeLayout->addWidget(modeTabBar);
     modeLayout->addStretch();
     modeLayout->addWidget(m_btnMinimize);
     modeLayout->addWidget(m_btnClose);
     modeLayout->setSpacing(4);
+    modeLayout->setContentsMargins(2,0,2,0);
+
+
 
     auto *modePanel = new QWidget;
     modePanel->setLayout(modeLayout);
     modePanel->setFixedHeight(32);
+    modePanel->setContentsMargins(2, 0, 2, 0);
+
 
     auto *stationButtons = new QHBoxLayout;
     stationButtons->addWidget(m_btnAdd);
@@ -187,7 +198,6 @@ void MainWindow::setupUi()
     mainLayout->setContentsMargins(0,0,0,0 );
 
     centerPanel->setStyleSheet("background-color: #000000;");
-
 }
 
 void MainWindow::setupTray()
@@ -210,9 +220,6 @@ void MainWindow::setupTray()
 
     m_quickPopup = new QuickControlPopup(m_stations, this);
     m_quickPopup->setFixedSize(200, 150);
-
-
-
 }
 
 void MainWindow::setupConnections()
@@ -320,8 +327,6 @@ void MainWindow::onPlayClicked()
     m_radio->togglePlayback();
 }
 
-
-
 void MainWindow::onNextClicked()
 {
     int index = m_listWidget->currentRow();
@@ -331,8 +336,6 @@ void MainWindow::onNextClicked()
         onPlayClicked();
     }
 }
-
-
 
 void MainWindow::onReconnectClicked()
 {
@@ -371,16 +374,14 @@ void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton)
-        m_dragPosition = event->globalPos() - frameGeometry().topLeft();
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton)
-        move(event->globalPos() - m_dragPosition);
+        move(event->globalPosition().toPoint() - m_dragPosition);
 }
-
-
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {

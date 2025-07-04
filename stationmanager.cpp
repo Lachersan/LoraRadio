@@ -1,27 +1,34 @@
 #include "stationmanager.h"
-#include <QFile>
-#include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QCoreApplication>
+#include <QDir>
 
-
+static QString defaultStationsPath()
+{
+    QString appDir = QCoreApplication::applicationDirPath();
+    return QDir(appDir).filePath("stations.json");
+}
 
 
 StationManager::StationManager(const QString &jsonPath, QObject *parent)
     : QObject(parent)
-    , m_jsonPath("F:/Project/untitled/stations.json")
+    , m_jsonPath(jsonPath.isEmpty()
+                  ? defaultStationsPath()
+                  : jsonPath)
     , m_settings("MyApp", "LoraRadio")
-
 {
+    if (!QFile::exists(m_jsonPath)) {
+        save();
+    }
+
     if (load()) {
-        // после загрузки JSON читаем из QSettings сохранённый индекс
         int idx = m_settings.value("player/lastIndex", -1).toInt();
-        if (idx >= 0 && idx < m_stations.size()) {
-            // сигнал, чтобы UI мог восстановить плейбек
+        if (idx >= 0 && idx < m_stations.size())
             emit lastStationIndexChanged(idx);
-        }
     }
 }
+
 
 
 bool StationManager::load() {
@@ -46,22 +53,28 @@ bool StationManager::load() {
     return true;
 }
 
-bool StationManager::save() const {
+bool StationManager::save() const
+{
     QJsonArray arr;
     for (auto &st : m_stations) {
         QJsonObject o;
         o.insert("name", st.name);
-        o.insert("url", st.url);
+        o.insert("url",  st.url);
         arr.append(o);
     }
     QJsonDocument doc(arr);
+
     QFile f(m_jsonPath);
+    QFileInfo info(f);
+    QDir().mkpath(info.path());
+
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
         return false;
+
     f.write(doc.toJson(QJsonDocument::Indented));
-    f.close();
     return true;
 }
+
 
 int StationManager::lastStationIndex() const
 {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QRadioButton>
 #include <QSystemTrayIcon>
 #include "StationManager.h"
 #include "RadioPlayer.h"
@@ -45,6 +46,7 @@ private:
     void setupTray();
     void setupConnections();
 
+    QTabBar *modeTabBar;
     IconButton       *m_btnClose;
     IconButton       *m_btnMinimize;
     StationManager   *m_stations;

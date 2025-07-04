@@ -16,9 +16,6 @@ int main(int argc, char *argv[])
     } else {
         qWarning("Cannot load qdarkstyle qss");
     }
-
-
-
     StationManager *stations = new StationManager("stations.json");
     MainWindow w(stations);
     w.show();
