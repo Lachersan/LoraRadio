@@ -1,7 +1,12 @@
 #pragma once
-
 #include <QWidget>
+#include <QTabBar>
+#include <QListWidget>
+#include <QPushButton>
+#include <QSlider>
 #include <QSpinBox>
+#include "stationmanager.h"
+
 
 
 class QListWidget;
@@ -25,6 +30,7 @@ public slots:
     void volumeChanged(int value);
 
 private:
+    QTabBar *tabBar;
     StationManager *m_stations;
     QListWidget *listWidget;
     QPushButton *btnReconnect;

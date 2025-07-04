@@ -1,8 +1,8 @@
 #include <QApplication>
 #include <QFile>
 #include "MainWindow.h"
-#include "StationManager.h"
-#include "FontLoader.h"
+#include "stationmanager.h"
+#include "../iclude/FontLoader.h"
 
 int main(int argc, char *argv[])
 {

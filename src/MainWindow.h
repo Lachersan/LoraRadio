@@ -3,7 +3,7 @@
 #include <QMainWindow>
 #include <QRadioButton>
 #include <QSystemTrayIcon>
-#include "StationManager.h"
+#include "stationmanager.h"
 #include "RadioPlayer.h"
 #include "QuickControlPopup.h"
 

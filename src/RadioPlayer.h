@@ -2,7 +2,7 @@
 
 #include <QMediaPlayer>
 #include <QAudioOutput>
-#include "StationManager.h"
+#include "stationmanager.h"
 
 class RadioPlayer : public QObject {
     Q_OBJECT

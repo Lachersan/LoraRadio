@@ -24,30 +24,30 @@ qt_add_resources(QDARKSTYLE_RCC
 
 
 add_executable(LoraRadio WIN32
-        main.cpp
-        radioplayer.cpp
-        radioplayer.h
-        trayiconmanager.cpp
-        trayiconmanager.h
-        AutoStartRegistry.cpp
-        AutoStartRegistry.h
-        resources.qrc
+        src/main.cpp
+        src/RadioPlayer.cpp
+        src/RadioPlayer.h
+        src/trayiconmanager.cpp
+        src/trayiconmanager.h
+        src/AutoStartRegistry.cpp
+        src/AutoStartRegistry.h
+        resources/resources.qrc
         fonts/fonts.qrc
-        app.rc
-        stationmanager.cpp
-        stationmanager.h
-        StationDialog.cpp
-        StationDialog.h
-        StationDialog.ui
-        QuickControlPopup.cpp
-        QuickControlPopup.h
-        IconButton.h
-        FontLoader.h
-        IconUtils.h
-        fluent_icons.h
-        IconButton.cpp
-        MainWindow.cpp
-        MainWindow.h
+        resources/image/app.rc
+        src/stationmanager.cpp
+        src/stationmanager.h
+        src/StationDialog.cpp
+        src/StationDialog.h
+        src/StationDialog.ui
+        src/QuickControlPopup.cpp
+        src/QuickControlPopup.h
+        src/IconButton.h
+        iclude/FontLoader.h
+        iclude/IconUtils.h
+        iclude/fluent_icons.h
+        src/IconButton.cpp
+        src/MainWindow.cpp
+        src/MainWindow.h
         styles/style.qrc
 
 )

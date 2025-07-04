@@ -1,10 +1,10 @@
 #include "MainWindow.h"
 #include "RadioPlayer.h"
-#include "StationManager.h"
+#include "stationmanager.h"
 #include "IconButton.h"
 #include "StationDialog.h"
 #include "QuickControlPopup.h"
-#include "fluent_icons.h"
+#include "../iclude/fluent_icons.h"
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>
@@ -42,7 +42,7 @@ MainWindow::MainWindow(StationManager *stations, QWidget *parent)
     m_volumeSpin->setValue(vol);
 
     setWindowTitle("LoraRadio");
-    setWindowIcon(QIcon(":/icons/icon.png"));
+    setWindowIcon(QIcon(":/icons/image/icon.png"));
     resize(700, 480);
 }
 
@@ -137,7 +137,6 @@ void MainWindow::setupUi()
     auto *modeLayout = new QHBoxLayout;
     modeTabBar = new QTabBar();
     modeTabBar->addTab(tr("Radio"));
-    modeTabBar->addTab(tr("YouTube"));
     modeTabBar->setExpanding(false);
     modeTabBar->setMovable(false);
 
@@ -202,7 +201,7 @@ void MainWindow::setupUi()
 
 void MainWindow::setupTray()
 {
-    m_trayIcon = new QSystemTrayIcon(QIcon(":/icons/icon.png"), this);
+    m_trayIcon = new QSystemTrayIcon(QIcon(":/icons/image/icon.png"), this);
     auto *menu = new QMenu(this);
 
     menu->addAction(tr("Показать"), this, &QWidget::showNormal);
@@ -219,7 +218,7 @@ void MainWindow::setupTray()
     m_trayIcon->show();
 
     m_quickPopup = new QuickControlPopup(m_stations, this);
-    m_quickPopup->setFixedSize(200, 150);
+    m_quickPopup->setFixedSize(200, 200);
 }
 
 void MainWindow::setupConnections()

@@ -2,7 +2,7 @@
 #pragma once
 
 #include <QDialog>
-#include "stationmanager.h"    // где определён struct Station
+#include "stationmanager.h"
 
 namespace Ui {
     class StationDialog;

@@ -19,7 +19,17 @@ StationManager::StationManager(const QString &jsonPath, QObject *parent)
     , m_settings("MyApp", "LoraRadio")
 {
     if (!QFile::exists(m_jsonPath)) {
-        save();
+        QDir().mkpath(QFileInfo(m_jsonPath).path());
+
+        QFile res(":/stations_default.json");
+        if (res.open(QIODevice::ReadOnly)) {
+            QFile out(m_jsonPath);
+            if (out.open(QIODevice::WriteOnly)) {
+                out.write(res.readAll());
+                out.close();
+            }
+            res.close();
+        }
     }
 
     if (load()) {
