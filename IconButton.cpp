@@ -1,9 +1,8 @@
 #include "IconButton.h"
 #include "FontLoader.h"
-#include <QFontDatabase>
 #include <QPainter>
-#include <QDebug>
-#include <QMessageBox>
+#include <QPixmap>
+#include <QFont>
 
 IconButton::IconButton(const QString& glyphUtf8,
                        int pixelSize,
@@ -11,26 +10,51 @@ IconButton::IconButton(const QString& glyphUtf8,
                        const QString& tooltip,
                        QWidget* parent)
   : QPushButton(parent)
+  , m_glyph    (glyphUtf8)
+  , m_pixelSize(pixelSize)
+  , m_color    (color)
 {
     setFlat(true);
+    if (!tooltip.isEmpty())
+        setToolTip(tooltip);
+    updateIcon();
+}
 
+void IconButton::setGlyph(const QString& glyphUtf8)
+{
+    if (glyphUtf8 == m_glyph) return;
+    m_glyph = glyphUtf8;
+    updateIcon();
+}
 
+void IconButton::setColor(const QColor& color)
+{
+    if (color == m_color) return;
+    m_color = color;
+    updateIcon();
+}
 
-    static QString fluentFamily = loadFluentIconsFont();
+void IconButton::setPixelSize(int pixelSize)
+{
+    if (pixelSize == m_pixelSize) return;
+    m_pixelSize = pixelSize;
+    updateIcon();
+}
 
-    QFont f(fluentFamily);
-    f.setPixelSize(pixelSize);
-    QSize sz(pixelSize + 4, pixelSize + 4);
-    QPixmap pm(sz);
+void IconButton::updateIcon()
+{
+    // создаём полотно чуть больше шрифта, чтобы глиф не обрезался
+    QSize canvas(m_pixelSize + 4, m_pixelSize + 4);
+    QPixmap pm(canvas);
     pm.fill(Qt::transparent);
 
     QPainter p(&pm);
-    p.setFont(f);
-    p.setPen(color);
-    QString glyph = QString::fromUtf8(glyphUtf8.toUtf8());
-    p.drawText(pm.rect(), Qt::AlignCenter, glyph);
+    QFont font(loadFluentIconsFont());
+    font.setPixelSize(m_pixelSize);
+    p.setFont(font);
+    p.setPen(m_color);
+    p.drawText(pm.rect(), Qt::AlignCenter, m_glyph);
 
-    setIcon(QIcon(pm));
-    setIconSize({pixelSize, pixelSize});
-    if (!tooltip.isEmpty()) setToolTip(tooltip);
+    QPushButton::setIcon(QIcon(pm));
+    setIconSize(QSize(m_pixelSize, m_pixelSize));
 }

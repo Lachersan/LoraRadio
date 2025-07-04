@@ -9,7 +9,6 @@ inline QString loadFluentIconsFont()
     if (!fluentFamily.isEmpty())
         return fluentFamily;
 
-    // Попытка загрузить шрифт из ресурса
     const char* path = ":/fonts/FluentSystemIcons-Filled.ttf";
     int id = QFontDatabase::addApplicationFont(path);
 

@@ -56,8 +56,6 @@ void MainWindow::setupUi()
     m_volumeSlider->setRange(0, 100);
     m_volumeSpin->setRange(0, 100);
 
-    const QSize icoSize(32,32);
-
     m_btnClose = new IconButton(
     ic_fluent_dismiss_20_filled,
     20,
@@ -269,8 +267,15 @@ void MainWindow::onVolumeChanged(int value)
 
 void MainWindow::onVolumeMuteClicked()
 {
-    bool muteNow = !m_radio->isMuted();
-    m_radio->setMuted(muteNow);
+    bool nowMuted = !m_radio->isMuted();
+    m_radio->setMuted(nowMuted);
+
+    if (nowMuted) {
+        m_volumeMute->setGlyph(ic_fluent_speaker_off_28_filled);
+    }
+    else {
+        m_volumeMute->setGlyph(ic_fluent_speaker_2_32_filled);
+    }
 }
 
 void MainWindow::onAddClicked()
@@ -307,8 +312,15 @@ void MainWindow::onPrevClicked()
 
 void MainWindow::onPlayClicked()
 {
+    if (m_radio->isPlaying())
+        m_btnPlay->setGlyph(ic_fluent_pause_circle_24_filled);
+    else
+        m_btnPlay->setGlyph(ic_fluent_play_circle_48_filled);
+
     m_radio->togglePlayback();
 }
+
+
 
 void MainWindow::onNextClicked()
 {

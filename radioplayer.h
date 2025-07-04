@@ -1,9 +1,7 @@
 #pragma once
 
-#include <QObject>
 #include <QMediaPlayer>
 #include <QAudioOutput>
-#include <QSettings>
 #include "StationManager.h"
 
 class RadioPlayer : public QObject {
