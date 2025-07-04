@@ -59,18 +59,18 @@ void MainWindow::setupUi()
     const QSize icoSize(32,32);
 
     m_btnClose = new IconButton(
-    ic_fluent_share_screen_stop_28_filled,
+    ic_fluent_dismiss_20_filled,
     20,
     QColor("#FFF"),
-    tr("Добавить"),
+    tr("Закрыть"),
     this
     );
 
     m_btnMinimize = new IconButton(
-    ic_fluent_window_multiple_20_filled,
+    ic_fluent_line_horizontal_1_20_filled,
     20,
     QColor("#FFF"),
-    tr("Удалить"),
+    tr("Свернуть"),
     this
     );
 
@@ -102,7 +102,7 @@ void MainWindow::setupUi()
     ic_fluent_previous_32_filled,
     32,
     QColor("#FFF"),
-    tr("Добавить"),
+    tr("Назад"),
     this
     );
 
@@ -110,7 +110,7 @@ void MainWindow::setupUi()
     ic_fluent_play_circle_48_filled,
     32,
     QColor("#FFF"),
-    tr("Добавить"),
+    tr(""),
     this
     );
 
@@ -118,7 +118,7 @@ void MainWindow::setupUi()
     ic_fluent_next_32_filled,
     32,
     QColor("#FFF"),
-    tr("Добавить"),
+    tr("Далее"),
     this
     );
 
@@ -126,11 +126,9 @@ void MainWindow::setupUi()
     ic_fluent_speaker_2_32_filled,
         32,
         QColor("#FFF"),
-        tr("Удалить"),
+        tr("Заглушить"),
         this
     );
-
-
 
     m_btnReconnect = new IconButton(
         ic_fluent_arrow_clockwise_32_filled,
@@ -139,6 +137,16 @@ void MainWindow::setupUi()
         tr("Переподключить"),
         this
     );
+
+    auto *modeLayout = new QHBoxLayout;
+    modeLayout->addStretch();
+    modeLayout->addWidget(m_btnMinimize);
+    modeLayout->addWidget(m_btnClose);
+    modeLayout->setSpacing(4);
+
+    auto *modePanel = new QWidget;
+    modePanel->setLayout(modeLayout);
+    modePanel->setFixedHeight(32);
 
     auto *stationButtons = new QHBoxLayout;
     stationButtons->addWidget(m_btnAdd);
@@ -150,28 +158,12 @@ void MainWindow::setupUi()
     m_btnClose->setProperty("role", "system");
     m_btnMinimize->setProperty("role", "system");
 
-
-    auto *modeLayout = new QHBoxLayout;
-    modeLayout->addStretch();
-    modeLayout->addWidget(m_btnMinimize);
-    modeLayout->addWidget(m_btnClose);
-    modeLayout->setSpacing(4);
-
-
-
-
-    auto *modePanel = new QWidget;
-    modePanel->setLayout(modeLayout);
-    modePanel->setFixedHeight(32);
-
-
     auto *stationPanel = new QVBoxLayout;
     stationPanel->addWidget(m_listWidget, 1);
     stationPanel->addLayout(stationButtons);
 
     auto *centerPanel = new QWidget;
     centerPanel->setLayout(stationPanel);
-
 
     auto *controlLayout = new QHBoxLayout;
     controlLayout->addWidget(m_btnReconnect);
@@ -196,9 +188,7 @@ void MainWindow::setupUi()
     setCentralWidget(central);
     mainLayout->setContentsMargins(0,0,0,0 );
 
-
     centerPanel->setStyleSheet("background-color: #000000;");
-
 
 }
 
@@ -223,18 +213,7 @@ void MainWindow::setupTray()
     m_quickPopup = new QuickControlPopup(m_stations, this);
     m_quickPopup->setFixedSize(200, 150);
 
-    connect(m_trayIcon, &QSystemTrayIcon::activated,
-            this,       &MainWindow::onTrayActivated);
-    connect(m_quickPopup, &QuickControlPopup::stationSelected,
-        m_radio,     &RadioPlayer::selectStation);
-    connect(m_stations, &StationManager::lastStationIndexChanged,
-        m_quickPopup, &QuickControlPopup::setCurrentStation);
-    connect(m_quickPopup, &QuickControlPopup::reconnectRequested,
-            m_radio,     &RadioPlayer::reconnectStation);
-    connect(m_quickPopup, &QuickControlPopup::volumeChanged,
-            m_radio,     &RadioPlayer::changeVolume);
-    connect(m_radio, &RadioPlayer::volumeChanged,
-            m_quickPopup, &QuickControlPopup::setVolume);
+
 
 }
 
@@ -260,6 +239,12 @@ void MainWindow::setupConnections()
     connect(m_btnNext,      &QPushButton::clicked, this, &MainWindow::onNextClicked);
     connect(m_btnPrev,      &QPushButton::clicked, this, &MainWindow::onPrevClicked);
 
+    connect(m_trayIcon,   &QSystemTrayIcon::activated, this, &MainWindow::onTrayActivated);
+    connect(m_quickPopup, &QuickControlPopup::stationSelected, m_radio, &RadioPlayer::selectStation);
+    connect(m_stations,   &StationManager::lastStationIndexChanged, m_quickPopup, &QuickControlPopup::setCurrentStation);
+    connect(m_quickPopup, &QuickControlPopup::reconnectRequested, m_radio, &RadioPlayer::reconnectStation);
+    connect(m_quickPopup, &QuickControlPopup::volumeChanged, m_radio,&RadioPlayer::changeVolume);
+    connect(m_radio,      &RadioPlayer::volumeChanged, m_quickPopup, &QuickControlPopup::setVolume);
 }
 
 
