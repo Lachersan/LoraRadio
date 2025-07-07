@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>image/icon.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>stations_default.json</file>
+    </qresource>
+</RCC>

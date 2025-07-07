@@ -1,3 +1,5 @@
+include(FetchContent)
+
 cmake_minimum_required(VERSION 3.31)
 project(LoraRadio)
 
@@ -5,9 +7,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
 
 set(CMAKE_PREFIX_PATH "F:/Qt/6.9.0/mingw_64")
+set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 
 find_package(Qt6 COMPONENTS
         Core
@@ -16,16 +18,38 @@ find_package(Qt6 COMPONENTS
         Multimedia
         REQUIRED)
 
+qt_add_resources(QDARKSTYLE_RCC
+        /styles/style.qrc
+)
+
+
 add_executable(LoraRadio WIN32
-        main.cpp
-        radioplayer.cpp
-        radioplayer.h
-        trayiconmanager.cpp
-        trayiconmanager.h
-        AutoStartRegistry.cpp
-        AutoStartRegistry.h
-        resources.qrc
-        app.rc
+        src/main.cpp
+        src/RadioPlayer.cpp
+        src/RadioPlayer.h
+        src/trayiconmanager.cpp
+        src/trayiconmanager.h
+        src/AutoStartRegistry.cpp
+        src/AutoStartRegistry.h
+        resources/resources.qrc
+        fonts/fonts.qrc
+        resources/image/app.rc
+        src/stationmanager.cpp
+        src/stationmanager.h
+        src/StationDialog.cpp
+        src/StationDialog.h
+        src/StationDialog.ui
+        src/QuickControlPopup.cpp
+        src/QuickControlPopup.h
+        src/IconButton.h
+        iclude/FontLoader.h
+        iclude/IconUtils.h
+        iclude/fluent_icons.h
+        src/IconButton.cpp
+        src/MainWindow.cpp
+        src/MainWindow.h
+        styles/style.qrc
+
 )
 target_link_libraries(LoraRadio
         Qt::Core
@@ -33,6 +57,7 @@ target_link_libraries(LoraRadio
         Qt::Widgets
         Qt::Multimedia
 )
+
 
 set(WINDEPLOYQT_PATH "F:/Qt/6.9.0/mingw_64/bin/windeployqt.exe")
 
