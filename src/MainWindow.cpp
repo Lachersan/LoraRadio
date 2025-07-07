@@ -42,6 +42,7 @@ MainWindow::MainWindow(StationManager *stations, QWidget *parent)
     m_volumeSlider->setValue(vol);
     m_volumeSpin->setValue(vol);
 
+
     setWindowTitle("LoraRadio");
     setWindowIcon(QIcon(":/icons/image/icon.png"));
     resize(700, 480);
@@ -238,6 +239,7 @@ void MainWindow::setupConnections()
 
     connect(m_radio,       &RadioPlayer::stationsChanged, this,    &MainWindow::onStationsChanged);
     connect(m_listWidget, &QListWidget::currentRowChanged, m_radio, &RadioPlayer::selectStation);
+    connect(m_listWidget, QOverload<int>::of(&QListWidget::currentRowChanged), m_stations, &StationManager::setLastStationIndex);
 
     connect(m_volumeSlider, &QSlider::valueChanged, m_radio, &RadioPlayer::changeVolume);
     connect(m_volumeSpin,   QOverload<int>::of(&QSpinBox::valueChanged), m_radio, &RadioPlayer::changeVolume);

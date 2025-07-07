@@ -97,7 +97,7 @@ void StationManager::setLastStationIndex(int index)
         index = -1;
 
     if (lastStationIndex() == index)
-        return; // без изменения
+        return;
 
     m_settings.setValue("player/lastIndex", index);
     emit lastStationIndexChanged(index);
