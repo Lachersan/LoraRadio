@@ -5,6 +5,7 @@
 #include "StationDialog.h"
 #include "QuickControlPopup.h"
 #include "../iclude/fluent_icons.h"
+#include "AutoStartRegistry.h"
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>
@@ -208,8 +209,16 @@ void MainWindow::setupTray()
 
     m_autostartAction = menu->addAction(tr("Автозапуск"));
     m_autostartAction->setCheckable(true);
-    QSettings s("MyApp", "LoraRadio");
-    m_autostartAction->setChecked(s.value("autostart/enabled", false).toBool());
+    QSettings initSettings("MyApp", "LoraRadio");
+    bool enabled = initSettings.value("autostart/enabled", false).toBool();
+    m_autostartAction->setChecked(enabled);
+
+    connect(m_autostartAction, &QAction::toggled, this, [this](bool enabled){
+        QSettings settings("MyApp", "LoraRadio");
+        settings.setValue("autostart/enabled", enabled);
+
+        AutoStartRegistry::setEnabled(enabled);
+    });
 
     menu->addSeparator();
     menu->addAction(tr("Выход"), qApp, &QCoreApplication::quit);
@@ -220,6 +229,7 @@ void MainWindow::setupTray()
     m_quickPopup = new QuickControlPopup(m_stations, this);
     m_quickPopup->setFixedSize(200, 200);
 }
+
 
 void MainWindow::setupConnections()
 {
