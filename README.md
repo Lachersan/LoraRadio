@@ -19,3 +19,7 @@ LoraRadio lets you:
 - Tray icon with context menu for show/hide, autostart toggle, and exit  
 - Quick popup for station selection, reconnect, and volume control  
 - Placeholder for future YouTube/media modes and light/dark themes  
+
+##License
+
+This project is licensed under the MIT License. See LICENSE for details.
