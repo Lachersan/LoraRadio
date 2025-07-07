@@ -15,7 +15,18 @@ RadioPlayer::RadioPlayer(StationManager *stations, QObject *parent)
     m_audio->setVolume(m_currentVolume / 100.0);
 
     connect(m_stations, &StationManager::stationsChanged,
-            this,       &RadioPlayer::emitStationList);
+            this, &RadioPlayer::emitStationList);
+
+    m_reconnectTimer.setSingleShot(true);
+    connect(&m_reconnectTimer, &QTimer::timeout,
+            this, &RadioPlayer::reconnectStation);
+
+    connect(m_player, &QMediaPlayer::mediaStatusChanged,
+            this,      &RadioPlayer::onMediaStatusChanged);
+    connect(m_player, &QMediaPlayer::errorOccurred,
+            this,      &RadioPlayer::onErrorOccurred);
+
+
 
     emitStationList();
 }
@@ -92,6 +103,33 @@ void RadioPlayer::reconnectStation()
     if (m_currentIndex < 0)
         return;
     selectStation(m_currentIndex);
+}
+
+void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
+{
+    // «застрял» буфер, конец потока или неизвестный статус
+    if (status == QMediaPlayer::StalledMedia
+     || status == QMediaPlayer::EndOfMedia
+     || status == QMediaPlayer::InvalidMedia)
+    {
+        scheduleReconnect();
+    }
+}
+
+void RadioPlayer::onErrorOccurred(QMediaPlayer::Error error,
+                                  const QString &errorString)
+{
+    Q_UNUSED(error);
+    qWarning() << "Stream error:" << errorString;
+    scheduleReconnect();
+}
+
+void RadioPlayer::scheduleReconnect()
+{
+    if (m_reconnectTimer.isActive())
+        return;
+
+    m_reconnectTimer.start(2000);
 }
 
 

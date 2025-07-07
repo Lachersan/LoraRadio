@@ -2,6 +2,7 @@
 
 #include <QMediaPlayer>
 #include <QAudioOutput>
+#include <QTimer>
 #include "stationmanager.h"
 
 class RadioPlayer : public QObject {
@@ -30,6 +31,12 @@ public slots:
     void volumeChanged(int value);
     void errorOccurred(const QString &message);
 
+private slots:
+void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
+    void onErrorOccurred(QMediaPlayer::Error error, const QString &errorString);
+    void scheduleReconnect();
+
+
 private:
     StationManager    *m_stations;
     QMediaPlayer      *m_player;
@@ -37,6 +44,8 @@ private:
     QSettings          m_settings;
     int                m_currentVolume = 50;
     int m_currentIndex = -1;
+    QTimer m_reconnectTimer;
+
 
     void emitStationList();
 };
