@@ -155,27 +155,27 @@ QTabBar::tab:selected {
 
 }
 
-QTabBar::tab:hover {
+QTabBar::tab:hover
+{
   background-color: rgba(85,138,255,0.1);
 }
 
-
-
-IconButton {
+IconButton
+{
     min-width: 36px;
     min-height: 36px;
     padding: 4px;
 }
-IconButton[role="system"] {
+IconButton[role="system"]
+{
   min-width: 20px;
   min-height: 20px;
   padding: 2px;
   font-size: 12pt;
 }
 
-
-
-IconButton, IconButton:focus, IconButton:pressed {
+IconButton, IconButton:focus, IconButton:pressed
+{
   border: none;
   background: transparent;
 }
@@ -187,6 +187,10 @@ QToolButton, QPushButton {
 
 QToolButton:focus, QPushButton:focus {
   outline: none;
+}
+
+IconButton#btnClose:hover {
+    background-color: red;
 }
 
 

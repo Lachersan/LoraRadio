@@ -63,6 +63,7 @@ void MainWindow::setupUi()
     tr("Закрыть"),
     this
     );
+    m_btnClose->setObjectName("btnClose");
 
     m_btnMinimize = new IconButton(
     ic_fluent_line_horizontal_1_20_filled,
@@ -228,7 +229,7 @@ void MainWindow::setupTray()
     m_trayIcon->show();
 
     m_quickPopup = new QuickControlPopup(m_stations, this);
-    m_quickPopup->setFixedSize(200, 200);
+    m_quickPopup->setFixedSize(200, 250);
 }
 
 

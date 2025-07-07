@@ -62,8 +62,8 @@ private:
     IconButton       *m_btnRemove;
     IconButton       *m_btnUpdate;
     IconButton       *m_btnReconnect;
-    QuickControlPopup* m_quickPopup;
+    QuickControlPopup*m_quickPopup;
     QSystemTrayIcon  *m_trayIcon;
     QAction          *m_autostartAction;
-    QPoint m_dragPosition;
+    QPoint           m_dragPosition;
 };
