@@ -1,17 +1,63 @@
-# CMake
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-build-*/
+# Папки сборки
+/build/
+/cmake-build-*/
+/Makefile
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/install_manifest.txt
 
-# CLion
-.idea/
-*.iml
+# Файлы CMake и генераторы
+/*.cbp
+/*.build/
+
+# Выходные бинарники
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.pdb
+
+# Модульные файлы, сгенерированные Qt
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
 
 # Qt Creator
-*.pro.user
+*.pro.user*
+*.qbs.user
+*.creator.user
 
-# OS
+# Visual Studio
+*.sln
+*.vcxproj*
+*.vcxproj.filters
+*.user
+*.opensdf
+*.sdf
+
+# CLion, VSCode, другие IDE
+/.idea/
+/.vscode/
+/*.iml
+
+# Логи, временные файлы
+*.log
+*.tmp
+*~
+
+# macOS
 .DS_Store
+
+# Windows
 Thumbs.db
+ehthumbs.db
+
+# Пользовательские данные
+stations.json
+
+# Прочее
+coverage/
+build-*/
