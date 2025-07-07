@@ -10,6 +10,8 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QMenuBar>
+#include <QMenu>
+#include <QMessageBox>
 #include <QSystemTrayIcon>
 #include <QAction>
 #include <QVBoxLayout>
@@ -109,7 +111,7 @@ void MainWindow::setupUi()
     ic_fluent_play_circle_48_filled,
     32,
     QColor("#FFF"),
-    tr(""),
+    tr("Воспроизвести/Пауза"),
     this
     );
 
@@ -143,9 +145,33 @@ void MainWindow::setupUi()
     modeTabBar->setExpanding(false);
     modeTabBar->setMovable(false);
 
+    m_langMenu = new QMenu(this);
+
+    QAction *a_en = m_langMenu->addAction(tr("English"));
+    QAction *a_ru = m_langMenu->addAction(tr("Русский"));
+    a_en->setData("en");
+    a_ru->setData("ru");
+
+    m_langGroup = new QActionGroup(this);
+    m_langGroup->setExclusive(true);
+    m_langGroup->addAction(a_en);
+    m_langGroup->addAction(a_ru);
+
+
+    QString curLang = QSettings("MyApp","LoraRadio")
+                          .value("language","en").toString();
+    if (curLang == "ru") a_ru->setChecked(true);
+    else                a_en->setChecked(true);
+
+    QToolButton *m_btnLang = new QToolButton(this);
+    m_btnLang->setText(tr("Язык"));
+    m_btnLang->setPopupMode(QToolButton::InstantPopup);
+    m_btnLang->setMenu(m_langMenu);
+    m_btnLang->setToolTip(tr("Выберите язык"));
 
     modeLayout->addWidget(modeTabBar);
     modeLayout->addStretch();
+    modeLayout->addWidget(m_btnLang);
     modeLayout->addWidget(m_btnMinimize);
     modeLayout->addWidget(m_btnClose);
     modeLayout->setSpacing(4);
@@ -237,6 +263,7 @@ void MainWindow::setupConnections()
 {
     connect(m_btnClose,    &QPushButton::clicked, this, &MainWindow::close);
     connect(m_btnMinimize, &QPushButton::clicked, this, &MainWindow::showMinimized);
+    connect(m_langGroup, &QActionGroup::triggered,this, &MainWindow::switchLanguage);
 
     connect(m_radio,       &RadioPlayer::stationsChanged, this,    &MainWindow::onStationsChanged);
     connect(m_listWidget, &QListWidget::currentRowChanged, m_radio, &RadioPlayer::selectStation);
@@ -400,3 +427,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
     hide();
     event->ignore();
 }
+
+void MainWindow::switchLanguage(QAction *action)
+{
+    const QString langCode = action->data().toString();
+    QSettings("MyApp","LoraRadio").setValue("language", langCode);
+
+    QMessageBox::information(
+        this,
+        tr("Язык изменен"),
+        tr("Перезапустите приложения для смены языка")
+    );
+}
+
