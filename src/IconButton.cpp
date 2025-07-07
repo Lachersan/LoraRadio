@@ -43,7 +43,6 @@ void IconButton::setPixelSize(int pixelSize)
 
 void IconButton::updateIcon()
 {
-    // создаём полотно чуть больше шрифта, чтобы глиф не обрезался
     QSize canvas(m_pixelSize + 4, m_pixelSize + 4);
     QPixmap pm(canvas);
     pm.fill(Qt::transparent);

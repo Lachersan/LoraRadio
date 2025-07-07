@@ -1,4 +1,3 @@
-// StationDialog.h
 #pragma once
 
 #include <QDialog>
@@ -12,13 +11,10 @@ class StationDialog : public QDialog {
     Q_OBJECT
 
 public:
-    // Конструктор для «Создать новую»
     explicit StationDialog(QWidget *parent = nullptr);
-    // Конструктор для «Правка существующей»
     explicit StationDialog(const Station &st, QWidget *parent = nullptr);
     ~StationDialog();
 
-    // Получить данные, введённые пользователем
     Station station() const;
 
 private:

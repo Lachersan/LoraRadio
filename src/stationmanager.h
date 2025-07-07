@@ -23,14 +23,14 @@ public:
     void setLastStationIndex(int index);
 
 public slots:
-    bool load();                                 // загрузить из файла
-    bool save() const;                           // сохранить в файл
-    void addStation(const Station &st);          // добавить
-    void removeStation(int index);               // удалить по индексу
-    void updateStation(int index, const Station &st); // изменить
+    bool load();
+    bool save() const;
+    void addStation(const Station &st);
+    void removeStation(int index);
+    void updateStation(int index, const Station &st);
 
     signals:
-    void stationsChanged();                      // общий сигнал
+    void stationsChanged();
     void stationAdded(int index);
     void stationRemoved(int index);
     void stationUpdated(int index);
