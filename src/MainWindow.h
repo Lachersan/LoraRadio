@@ -3,6 +3,9 @@
 #include <QMainWindow>
 #include <QRadioButton>
 #include <QSystemTrayIcon>
+#include <QTranslator>
+#include <QActionGroup>
+#include <QToolButton>
 #include "stationmanager.h"
 #include "RadioPlayer.h"
 #include "QuickControlPopup.h"
@@ -40,6 +43,7 @@ private slots:
     void onNextClicked();
     void onPrevClicked();
     void onTrayActivated(QSystemTrayIcon::ActivationReason);
+    void switchLanguage(QAction *action);
 
 private:
     void setupUi();
@@ -49,6 +53,9 @@ private:
     QTabBar *modeTabBar;
     IconButton       *m_btnClose;
     IconButton       *m_btnMinimize;
+    QMenu            *m_langMenu;
+    QActionGroup     *m_langGroup;
+    QToolButton      *m_btnLang;
     StationManager   *m_stations;
     RadioPlayer      *m_radio;
     QListWidget      *m_listWidget;
@@ -66,4 +73,6 @@ private:
     QSystemTrayIcon  *m_trayIcon;
     QAction          *m_autostartAction;
     QPoint           m_dragPosition;
+    QTranslator    m_translator;
+
 };

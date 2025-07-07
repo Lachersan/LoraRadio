@@ -5,4 +5,8 @@
     <qresource prefix="/">
         <file>stations_default.json</file>
     </qresource>
+    <qresource prefix="/translations">
+        <file>translations/loraradio_ru.qm</file>
+        <file>translations/loraradio_en.qm</file>
+    </qresource>
 </RCC>
