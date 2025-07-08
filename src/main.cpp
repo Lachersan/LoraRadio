@@ -5,6 +5,7 @@
 #include <QDir>
 #include "MainWindow.h"
 #include "stationmanager.h"
+#include "RadioPlayer.h"
 #include "../iclude/FontLoader.h"
 
 int main(int argc, char *argv[])
@@ -47,7 +48,9 @@ int main(int argc, char *argv[])
 
 
     StationManager *stations = new StationManager("stations.json");
-    MainWindow w(stations);
+    auto *player = new RadioPlayer(stations);
+
+    MainWindow w(stations, player);
     w.show();
 
     return app.exec();

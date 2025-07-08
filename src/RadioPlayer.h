@@ -1,51 +1,46 @@
-#pragma once
 
+#include "AbstractPlayer.h"
+#include "AutoStartRegistry.h"
 #include <QMediaPlayer>
 #include <QAudioOutput>
+#include <QSettings>
 #include <QTimer>
-#include "stationmanager.h"
 
-class RadioPlayer : public QObject {
+class StationManager;
+
+class RadioPlayer : public AbstractPlayer {
     Q_OBJECT
-
 public:
-    explicit RadioPlayer(StationManager *stations, QObject *parent = nullptr);
-    QStringList stationNames() const;
+    explicit RadioPlayer(StationManager* stations, QObject* parent = nullptr);
+    ~RadioPlayer() override;
 
+    void play(const QString& url) override;
+    void stop() override;
+    void togglePlayback() override;
 
-public slots:
-    void selectStation(int index);
-    void addStation(const Station &st);
-    void removeStation(int index);
-    void updateStation(int index, const Station &st);
-    void reconnectStation();
-    void changeVolume(int value);
-    void setMuted(bool muted);
-    bool isMuted() const;
-    void toggleAutostart(bool enabled);
-    void togglePlayback();
-    bool isPlaying() const;
+    void setVolume(int value) override;
+    int volume() const override;
+    void setMuted(bool muted) override;
+    bool isMuted() const override;
 
     signals:
-    void stationsChanged(const QStringList &names);
-    void volumeChanged(int value);
-    void errorOccurred(const QString &message);
+        void stationsChanged(const QStringList& names);
 
 private slots:
-void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
-    void onErrorOccurred(QMediaPlayer::Error error, const QString &errorString);
-    void scheduleReconnect();
-
+    void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
+    void onErrorOccurred(QMediaPlayer::Error error,
+                         const QString& errorString);
+    void reconnectStation();
 
 private:
-    StationManager    *m_stations;
-    QMediaPlayer      *m_player;
-    QAudioOutput      *m_audio;
-    QSettings          m_settings;
-    int                m_currentVolume = 50;
-    int m_currentIndex = -1;
-    QTimer m_reconnectTimer;
-
-
     void emitStationList();
+    void scheduleReconnect();
+
+    StationManager* m_stations;
+    QMediaPlayer*   m_player;
+    QAudioOutput*   m_audio;
+    QSettings       m_settings;
+    QTimer          m_reconnectTimer;
+    int             m_currentVolume;
+    int             m_currentIndex{-1};
 };

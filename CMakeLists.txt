@@ -54,6 +54,7 @@ add_executable(LoraRadio WIN32
         src/MainWindow.cpp
         src/MainWindow.h
         styles/style.qrc
+        src/AbstractPlayer.h
 
 )
 target_link_libraries(LoraRadio
