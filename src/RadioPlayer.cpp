@@ -88,7 +88,7 @@ void RadioPlayer::togglePlayback()
     if (m_player->playbackState() == QMediaPlayer::PlayingState) {
         m_player->pause();
     } else if (m_currentIndex >= 0) {
-        m_player->play(); // продолжает текущую
+        m_player->play();
     }
 }
 
@@ -107,7 +107,6 @@ void RadioPlayer::reconnectStation()
 
 void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
-    // «застрял» буфер, конец потока или неизвестный статус
     if (status == QMediaPlayer::StalledMedia
      || status == QMediaPlayer::EndOfMedia
      || status == QMediaPlayer::InvalidMedia)

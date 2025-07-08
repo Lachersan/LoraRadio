@@ -2,6 +2,7 @@
 #include <QTranslator>
 #include <QLibraryInfo>
 #include <QFile>
+#include <QDir>
 #include "MainWindow.h"
 #include "stationmanager.h"
 #include "../iclude/FontLoader.h"
@@ -9,6 +10,9 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    QDir::setCurrent(QCoreApplication::applicationDirPath());
+
     loadFluentIconsFont();
 
     QFile f(":/styles/darkstyle.qss");
