@@ -1,5 +1,5 @@
 
-#include "AbstractPlayer.h"
+#include "../iclude/AbstractPlayer.h"
 #include "AutoStartRegistry.h"
 #include <QMediaPlayer>
 #include <QAudioOutput>
@@ -39,7 +39,6 @@ private:
     StationManager* m_stations;
     QMediaPlayer*   m_player;
     QAudioOutput*   m_audio;
-    QSettings       m_settings;
     QTimer          m_reconnectTimer;
     int             m_currentVolume;
     int             m_currentIndex{-1};

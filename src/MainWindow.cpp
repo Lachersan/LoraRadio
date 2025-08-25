@@ -1,11 +1,18 @@
 #include "MainWindow.h"
+#include "RadioPage.h"
+#include "YouTubePage.h"
+
 #include "StationDialog.h"
 #include "AutoStartRegistry.h"
 #include "IconButton.h"
 #include "../iclude/fluent_icons.h"
 #include <QSettings>
+#include <QLabel>
 #include <QMenu>
 #include <QListWidget>
+#include <QStackedWidget>
+#include <QLineEdit>
+#include <QListWidgetItem>
 #include <QSlider>
 #include <QSpinBox>
 #include <QMessageBox>
@@ -18,17 +25,67 @@
 #include <QDebug>
 using namespace fluent_icons;
 
+namespace {
+    // Найти глобальный индекс N-го элемента типа `type` (nLocal) в общем списке.
+// Возвращает -1 если не найден.
+    static int globalIndexFromLocal(const StationManager* mgr, const QString& type, int nLocal) {
+        if (!mgr || nLocal < 0) return -1;
+        int local = 0;
+        const auto &all = mgr->stations();
+        for (int i = 0; i < all.size(); ++i) {
+            if (all.at(i).type == type) {
+                if (local == nLocal) return i;
+                ++local;
+            }
+        }
+        return -1;
+    }
+
+    // Найти локальный индекс (внутри типа) для глобального индекса.
+// Возвращает -1 если глобальный индекс неверный.
+    static int localIndexFromGlobal(const StationManager* mgr, int globalIdx) {
+        if (!mgr) return -1;
+        const auto &all = mgr->stations();
+        if (globalIdx < 0 || globalIdx >= all.size()) return -1;
+        const QString type = all.at(globalIdx).type;
+        int local = 0;
+        for (int i = 0; i < globalIdx; ++i)
+            if (all.at(i).type == type) ++local;
+        return local;
+    }
+}
+
+// ----------------------------
+// MainWindow
+// ----------------------------
 MainWindow::MainWindow(StationManager* stations,
                        AbstractPlayer* player,
                        QWidget* parent)
     : QMainWindow(parent)
     , m_stations(stations)
-    , m_radio(player)
+    , m_player(player)
 {
     setupUi();
     setupTray();
     setupConnections();
-    onStationsChanged();
+
+    modeTabBar->setCurrentIndex(0);
+    m_lastModeIndex = modeTabBar->currentIndex();
+
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
+    qDebug() << "[MainWindow] Loaded volume from QSettings (for debug):" << settings.value("volume", 15).toInt();
+
+    // Загружаем список (в очередь, чтобы не блокировать конструктор)
+    QMetaObject::invokeMethod(m_stations, "load", Qt::QueuedConnection);
+
+    // Восстанавливаем последний индекс для текущего типа (по вкладке)
+    QString type = (modeStack && modeStack->currentIndex() == 0) ? QStringLiteral("radio") : QStringLiteral("youtube");
+    int lastLocal = m_stations->lastStationIndex(type);
+    QMetaObject::invokeMethod(this, [this, lastLocal, type]() {
+        // Перевод локального индекса в глобальный и воспроизведение
+        int global = globalIndexFromLocal(m_stations, type, lastLocal);
+        if (global >= 0) playStation(global);
+    }, Qt::QueuedConnection);
 
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
@@ -42,180 +99,62 @@ MainWindow::MainWindow(StationManager* stations,
 
 void MainWindow::setupUi()
 {
-    m_listWidget   = new QListWidget;
-    m_volumeSlider = new QSlider(Qt::Horizontal);
-    m_volumeSpin   = new QSpinBox;
-    m_volumeSlider->setRange(0, 100);
-    m_volumeSpin->setRange(0, 100);
-
-    m_btnClose = new IconButton(
-    ic_fluent_dismiss_20_filled,
-    20,
-    QColor("#FFF"),
-    tr("Закрыть"),
-    this
-    );
+    m_btnClose = new IconButton(ic_fluent_dismiss_20_filled, 20, QColor("#FFF"), tr("Закрыть"), this);
     m_btnClose->setObjectName("btnClose");
+    m_btnMinimize = new IconButton(ic_fluent_line_horizontal_1_20_filled, 20, QColor("#FFF"), tr("Свернуть"), this);
+    m_btnMinimize->setObjectName("btnMinimize");
 
-    m_btnMinimize = new IconButton(
-    ic_fluent_line_horizontal_1_20_filled,
-    20,
-    QColor("#FFF"),
-    tr("Свернуть"),
-    this
-    );
-
-    m_btnAdd = new IconButton(
-    ic_fluent_add_circle_32_filled,
-    32,
-    QColor("#FFF"),
-    tr("Добавить"),
-    this
-    );
-
-    m_btnRemove = new IconButton(
-    ic_fluent_delete_32_filled,
-        32,
-        QColor("#FFF"),
-        tr("Удалить"),
-        this
-    );
-
-    m_btnUpdate = new IconButton(
-    ic_fluent_edit_32_filled,
-        32,
-        QColor("#FFF"),
-        tr("Изменить"),
-        this
-    );
-
-    m_btnPrev = new IconButton(
-    ic_fluent_previous_32_filled,
-    32,
-    QColor("#FFF"),
-    tr("Назад"),
-    this
-    );
-
-    m_btnPlay = new IconButton(
-    ic_fluent_play_circle_48_filled,
-    32,
-    QColor("#FFF"),
-    tr("Воспроизвести/Пауза"),
-    this
-    );
-
-    m_btnNext = new IconButton(
-    ic_fluent_next_32_filled,
-    32,
-    QColor("#FFF"),
-    tr("Далее"),
-    this
-    );
-
-    m_volumeMute = new IconButton(
-    ic_fluent_speaker_2_32_filled,
-        32,
-        QColor("#FFF"),
-        tr("Заглушить"),
-        this
-    );
-
-    m_btnReconnect = new IconButton(
-        ic_fluent_arrow_clockwise_32_filled,
-        32,
-        QColor("#FFF"),
-        tr("Переподключить"),
-        this
-    );
-
-    auto *modeLayout = new QHBoxLayout;
-    modeTabBar = new QTabBar();
+    modeTabBar = new QTabBar;
     modeTabBar->addTab(tr("Radio"));
+    modeTabBar->addTab(tr("YouTube"));
     modeTabBar->setExpanding(false);
     modeTabBar->setMovable(false);
 
     m_langMenu = new QMenu(this);
-
     QAction *a_en = m_langMenu->addAction(tr("English"));
     QAction *a_ru = m_langMenu->addAction(tr("Русский"));
-    a_en->setData("en");
-    a_ru->setData("ru");
-
+    a_en->setData("en"); a_ru->setData("ru");
     m_langGroup = new QActionGroup(this);
     m_langGroup->setExclusive(true);
     m_langGroup->addAction(a_en);
     m_langGroup->addAction(a_ru);
-
-
-    QString curLang = QSettings("MyApp","LoraRadio")
-                          .value("language","en").toString();
-    if (curLang == "ru") a_ru->setChecked(true);
-    else                a_en->setChecked(true);
-
     QToolButton *m_btnLang = new QToolButton(this);
     m_btnLang->setText(tr("Язык"));
     m_btnLang->setPopupMode(QToolButton::InstantPopup);
     m_btnLang->setMenu(m_langMenu);
     m_btnLang->setToolTip(tr("Выберите язык"));
 
-    modeLayout->addWidget(modeTabBar);
-    modeLayout->addStretch();
-    modeLayout->addWidget(m_btnLang);
-    modeLayout->addWidget(m_btnMinimize);
-    modeLayout->addWidget(m_btnClose);
-    modeLayout->setSpacing(4);
-    modeLayout->setContentsMargins(2,0,2,0);
+    auto *topLayout = new QHBoxLayout;
+    topLayout->addWidget(modeTabBar);
+    topLayout->addStretch();
+    topLayout->addWidget(m_btnLang);
+    topLayout->addWidget(m_btnMinimize);
+    topLayout->addWidget(m_btnClose);
+    topLayout->setSpacing(4);
+    topLayout->setContentsMargins(2,0,2,0);
 
+    // Страницы
+    radioPage = new RadioPage(m_stations, m_player, this);
+    ytPage    = new YouTubePage(m_player, this);
+    modeStack = new QStackedWidget;
+    modeStack->addWidget(radioPage);
+    modeStack->addWidget(ytPage);
 
-
-    auto *modePanel = new QWidget;
-    modePanel->setLayout(modeLayout);
-    modePanel->setFixedHeight(32);
-    modePanel->setContentsMargins(2, 0, 2, 0);
-
-
-    auto *stationButtons = new QHBoxLayout;
-    stationButtons->addWidget(m_btnAdd);
-    stationButtons->addWidget(m_btnUpdate);
-    stationButtons->addWidget(m_btnRemove);
-    stationButtons->addStretch();
-    m_btnClose->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    m_btnMinimize->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    m_btnClose->setProperty("role", "system");
-    m_btnMinimize->setProperty("role", "system");
-
-    auto *stationPanel = new QVBoxLayout;
-    stationPanel->addWidget(m_listWidget, 1);
-    stationPanel->addLayout(stationButtons);
-
-    auto *centerPanel = new QWidget;
-    centerPanel->setLayout(stationPanel);
-
-    auto *controlLayout = new QHBoxLayout;
-    controlLayout->addWidget(m_btnReconnect);
-    controlLayout->addWidget(m_btnPrev);
-    controlLayout->addWidget(m_btnPlay);
-    controlLayout->addWidget(m_btnNext);
-    controlLayout->addStretch();
-    controlLayout->addWidget(m_volumeMute);
-    controlLayout->addWidget(m_volumeSpin);
-    controlLayout->addWidget(m_volumeSlider);
-
-    auto *controlPanel = new QWidget;
-    controlPanel->setLayout(controlLayout);
-
-    auto *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(modePanel);
-    mainLayout->addWidget(centerPanel, 1);
-    mainLayout->addWidget(controlPanel);
+    // Собираем всё вместе в вертикальный лэйаут
+    auto *mainLay = new QVBoxLayout;
+    mainLay->addLayout(topLayout);     // таббар + кнопки
+    mainLay->addWidget(modeStack, 1);  // содержимое страниц
 
     auto *central = new QWidget;
-    central->setLayout(mainLayout);
+    central->setLayout(mainLay);
     setCentralWidget(central);
-    mainLayout->setContentsMargins(0,0,0,0 );
 
-    centerPanel->setStyleSheet("background-color: #000000;");
+    // Сигнал переключения вкладки
+    connect(modeTabBar, &QTabBar::currentChanged,
+            modeStack, &QStackedWidget::setCurrentIndex);
+    modeTabBar->setCurrentIndex(0);
+
+    qDebug() << "setupUi";
 }
 
 void MainWindow::setupTray()
@@ -228,15 +167,30 @@ void MainWindow::setupTray()
 
     m_autostartAction = menu->addAction(tr("Автозапуск"));
     m_autostartAction->setCheckable(true);
-    QSettings initS("MyApp", "LoraRadio");
-    bool enabled = initS.value("autostart/enabled", false).toBool();
-    m_autostartAction->setChecked(enabled);
+    {
+        QSettings initSettings(
+            QSettings::IniFormat,
+            QSettings::UserScope,
+            "MyApp",
+            "LoraRadio"
+        );
+        bool enabled = initSettings.value("autostart/enabled", false).toBool();
+        m_autostartAction->setChecked(enabled);
+    }
 
+    // При переключении — снова локально пишем в INI и sync()
     connect(m_autostartAction, &QAction::toggled, this, [=](bool on){
-        QSettings s("MyApp", "LoraRadio");
+        QSettings s(
+            QSettings::IniFormat,
+            QSettings::UserScope,
+            "MyApp",
+            "LoraRadio"
+        );
         s.setValue("autostart/enabled", on);
+        s.sync();
         AutoStartRegistry::setEnabled(on);
     });
+    qDebug() << "setupTray";
 
     menu->addSeparator();
     menu->addAction(tr("Выход"), qApp, &QCoreApplication::quit);
@@ -285,109 +239,241 @@ void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 
 
 void MainWindow::setupConnections()
-{
-    connect(m_btnClose,    &IconButton::clicked,     this, &MainWindow::close);
-    connect(m_btnMinimize, &IconButton::clicked,     this, &MainWindow::showMinimized);
-    connect(m_langGroup,   &QActionGroup::triggered, this, &MainWindow::switchLanguage);
+{    connect(m_btnClose,    &IconButton::clicked, this, &MainWindow::close);
+    connect(m_btnMinimize, &IconButton::clicked, this, &MainWindow::showMinimized);
+    // === Language Switching ===
+    connect(m_langGroup, &QActionGroup::triggered, this, &MainWindow::switchLanguage);
+    // === Tab Switching ===
+    connect(modeTabBar, &QTabBar::currentChanged, this, &MainWindow::onModeChanged);
+    connect(modeTabBar, &QTabBar::currentChanged, modeStack, &QStackedWidget::setCurrentIndex);
+    // === Station CRUD (RadioPage → MainWindow)
+    connect(radioPage, &RadioPage::playStation, this, &MainWindow::playStation);
+    connect(radioPage, &RadioPage::requestAdd, this, &MainWindow::onAddClicked);
+    connect(radioPage, &RadioPage::requestRemove, this, &MainWindow::onRemoveClicked);
+    connect(radioPage, &RadioPage::requestUpdate, this, &MainWindow::onUpdateClicked);
 
-    connect(m_stations, &StationManager::stationsChanged,
-            this,       &MainWindow::onStationsChanged);
+    // 1) При изменениях в StationManager обновляем YouTubePage (показываем только youtube)
+connect(m_stations, &StationManager::stationsChanged, this, [this]() {
+    const QVector<Station> yt = m_stations->stationsForType(QStringLiteral("youtube"));
+    if (ytPage) ytPage->setStations(yt);
+});
 
-    connect(m_listWidget, &QListWidget::currentRowChanged,
-            this,          &MainWindow::playStation);
-    connect(m_listWidget,
-            QOverload<int>::of(&QListWidget::currentRowChanged),
-            m_stations,
-            &StationManager::setLastStationIndex);
+const QVector<Station> ytInit = m_stations->stationsForType(QStringLiteral("youtube"));
+if (ytPage) ytPage->setStations(ytInit);
 
-    connect(m_btnPlay, &IconButton::clicked,
-            this,        &MainWindow::onPlayClicked);
-    connect(m_radio, &AbstractPlayer::playbackStateChanged,
-            this,       &MainWindow::onPlaybackStateChanged);
+connect(ytPage, &YouTubePage::requestAdd, this, [this]() {
+    StationDialog dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        Station st = dlg.station();
+        st.type = QStringLiteral("youtube"); // важно: принудительно указываем тип
+        m_stations->addStation(st);
+        m_stations->save(); // сохранит и вызовет stationsChanged -> обновит ytPage
+    }
+});
 
-    connect(m_btnPrev, &IconButton::clicked, this, &MainWindow::onPrevClicked);
-    connect(m_btnNext, &IconButton::clicked, this, &MainWindow::onNextClicked);
-    connect(m_btnReconnect, &IconButton::clicked,
-            this, &MainWindow::onReconnectClicked);
+connect(ytPage, &YouTubePage::requestRemove, this, [this](int localIdx) {
+    const QString type = QStringLiteral("youtube");
+    const int global = globalIndexFromLocal(m_stations, type, localIdx);
+    if (global >= 0) {
+        m_stations->removeStation(global);
+        m_stations->save(); // save() -> stationsChanged -> ytPage обновится
+    } else {
+        qWarning() << "[MainWindow] YouTube remove: cannot map local index" << localIdx;
+    }
+});
 
-    connect(m_volumeSlider, &QSlider::valueChanged,
-            m_radio, &AbstractPlayer::setVolume);
-    connect(m_volumeSpin,
-            QOverload<int>::of(&QSpinBox::valueChanged),
-            m_radio, &AbstractPlayer::setVolume);
-    connect(m_radio, &AbstractPlayer::volumeChanged,
-            this,    &MainWindow::onVolumeChanged);
+connect(ytPage, &YouTubePage::requestUpdate, this, [this](int localIdx) {
+    const QString type = QStringLiteral("youtube");
+    const int global = globalIndexFromLocal(m_stations, type, localIdx);
+    if (global < 0) {
+        qWarning() << "[MainWindow] YouTube update: cannot map local index" << localIdx;
+        return;
+    }
+    Station orig = m_stations->stations().at(global);
+    StationDialog dlg(orig, this);
+    if (dlg.exec() == QDialog::Accepted) {
+        Station updated = dlg.station();
+        updated.type = type; // сохраняем тип как youtube
+        m_stations->updateStation(global, updated);
+        m_stations->save();
+    }
+});
 
-    connect(m_volumeMute, &IconButton::clicked,
-            this, &MainWindow::onVolumeMuteClicked);
 
+    // === Кнопки управления (prev/next/reconnect)
+    connect(radioPage, &RadioPage::prev, this, &MainWindow::onPrevClicked);
+    connect(radioPage, &RadioPage::next, this, &MainWindow::onNextClicked);
+    connect(radioPage, &RadioPage::reconnectRequested, this, &MainWindow::onReconnectClicked);
+    // === Громкость и mute
+    connect(m_player, &AbstractPlayer::volumeChanged, radioPage, &RadioPage::setVolume);
+    connect(m_player, &AbstractPlayer::mutedChanged, radioPage, &RadioPage::setMuted);
+
+    connect(m_player, &AbstractPlayer::volumeChanged,
+            ytPage,    &YouTubePage::setVolume);
+    connect(m_player, &AbstractPlayer::mutedChanged,
+            ytPage,    &YouTubePage::setMuted);
+    // === Playback status
+    connect(m_player, &AbstractPlayer::playbackStateChanged,
+            radioPage, &RadioPage::setPlaybackState);
+    connect(m_player, &AbstractPlayer::playbackStateChanged,
+            ytPage,    &YouTubePage::setPlaybackState);
+    connect(m_player, &AbstractPlayer::playbackStateChanged,
+            this,      &MainWindow::onPlaybackStateChanged);
+    // === Volume controls (radio → player)
+    connect(radioPage, &RadioPage::volumeChanged,
+            m_player,   &AbstractPlayer::setVolume);
+    // === YouTube Controls
+
+
+    connect(ytPage, &YouTubePage::playRequested, this, [this](const QString &url) {
+    if (m_player) {
+        m_player->stop();
+        m_player->play(url);
+
+        // Поиск local index
+        const QVector<Station> yt = m_stations->stationsForType("youtube");
+        int local = -1;
+        for (int i = 0; i < yt.size(); ++i) {
+            if (yt.at(i).url == url) {
+                local = i;
+                break;
+            }
+        }
+        if (local >= 0) {
+            m_stations->setLastStationIndex(local, "youtube");
+            qDebug() << "[MainWindow] Updated last index for youtube to" << local;
+        } else {
+            qWarning() << "[MainWindow] URL not in youtube stations, reconnect may not work as expected";
+            // Опционально: Авто-добавить как новую станцию
+            // Station st; st.url = url; st.name = "Auto-added: " + url; st.type = "youtube";
+            // m_stations->addStation(st); m_stations->save();
+        }
+    }
+});
+
+    connect(ytPage, &YouTubePage::searchRequested,
+            m_player, &AbstractPlayer::play);
+
+    connect(ytPage, &YouTubePage::prevRequested,      this, &MainWindow::onPrevClicked);
+    connect(ytPage, &YouTubePage::nextRequested,      this, &MainWindow::onNextClicked);
+    connect(ytPage, &YouTubePage::reconnectRequested, this, &MainWindow::onReconnectClicked);
+
+    connect(ytPage, &YouTubePage::volumeChanged,
+            m_player, &AbstractPlayer::setVolume);
+    // === Трей и быстрый доступ
+    connect(m_trayIcon, &QSystemTrayIcon::activated,
+            this,       &MainWindow::onTrayActivated);
     connect(m_quickPopup, &QuickControlPopup::stationSelected,
             this,       &MainWindow::playStation);
     connect(m_quickPopup, &QuickControlPopup::reconnectRequested,
             this,       &MainWindow::onReconnectClicked);
     connect(m_quickPopup, &QuickControlPopup::volumeChanged,
-            m_radio,    &AbstractPlayer::setVolume);
-    connect(m_radio,      &AbstractPlayer::volumeChanged,
+            m_player,    &AbstractPlayer::setVolume);
+    connect(m_player, &AbstractPlayer::volumeChanged,
             m_quickPopup, &QuickControlPopup::setVolume);
-
-    connect(m_btnAdd,    &IconButton::clicked, this, &MainWindow::onAddClicked);
-    connect(m_btnRemove, &IconButton::clicked, this, &MainWindow::onRemoveClicked);
-    connect(m_btnUpdate, &IconButton::clicked, this, &MainWindow::onUpdateClicked);
-
-    connect(m_trayIcon, &QSystemTrayIcon::activated,
-        this, &MainWindow::onTrayActivated);
 }
 
-void MainWindow::onStationsChanged()
-{
-    m_listWidget->clear();
-    for (const auto& st : m_stations->stations())
-        m_listWidget->addItem(st.name);
 
-    int last = m_stations->lastStationIndex();
-    if (last >= 0 && last < m_listWidget->count())
-        m_listWidget->setCurrentRow(last);
-}
-
-void MainWindow::playStation(int index)
+void MainWindow::playStation(int idx)
 {
-    if (index < 0 || index >= m_stations->stations().size())
+    const auto& list = m_stations->stations();
+    if (idx < 0 || idx >= list.size()) {
+        qWarning() << "[MainWindow] playStation: invalid index" << idx;
         return;
+    }
+    const Station& st = list.at(idx);
+    qDebug() << "[MainWindow] Playing station:" << st.name << st.url;
+    m_player->play(st.url);
 
-    const auto& st = m_stations->stations().at(index);
-    m_radio->play(st.url);
+    // Сохраняем *локальный* индекс в настройках для данного типа
+    int localIdx = localIndexFromGlobal(m_stations, idx);
+    if (localIdx >= 0) {
+        m_stations->setLastStationIndex(localIdx, st.type);
+    }
 }
 
 void MainWindow::onPlaybackStateChanged(bool isPlaying)
 {
-    if (isPlaying)
-        m_btnPlay->setGlyph(ic_fluent_pause_circle_24_filled);
-    else
-        m_btnPlay->setGlyph(ic_fluent_play_circle_48_filled);
+    if (radioPage)
+        radioPage->setPlaybackState(isPlaying);
+
+    if (ytPage)
+        ytPage->setPlaybackState(isPlaying);
+
 }
 
 void MainWindow::onPlayClicked()
 {
-    m_radio->togglePlayback();
+    m_player->togglePlayback();
 }
 
 void MainWindow::onPrevClicked()
 {
-    int idx = m_listWidget->currentRow();
-    if (idx > 0)
-        playStation(idx - 1);
+    // Определяем текущий тип по вкладке
+    QString type = (modeStack && modeStack->currentIndex() == 0) ? QStringLiteral("radio") : QStringLiteral("youtube");
+    int local = m_stations->lastStationIndex(type);
+    qDebug() << "[Prev] lastLocalIndex =" << local << "type=" << type;
+
+    // Если можно перейти на предыдущий в пределах типа
+    if (local > 0) {
+        local--;  // новый локальный индекс
+        int global = globalIndexFromLocal(m_stations, type, local);
+        if (global >= 0) {
+            m_stations->setLastStationIndex(local, type);
+            const auto& st = m_stations->stations().at(global);
+            m_player->play(st.url);
+        }
+    } else {
+        qWarning() << "[Prev] Cannot go before first station of type" << type;
+    }
 }
 
 void MainWindow::onNextClicked()
 {
-    int idx = m_listWidget->currentRow();
-    if (idx < m_listWidget->count() - 1)
-        playStation(idx + 1);
+    // Определяем текущий тип по вкладке
+    QString type = (modeStack && modeStack->currentIndex() == 0) ? QStringLiteral("radio") : QStringLiteral("youtube");
+    int local = m_stations->lastStationIndex(type);
+    qDebug() << "[Next] lastLocalIndex =" << local << "type=" << type;
+
+    // Определяем количество станций данного типа
+    int countLocal = m_stations->stationsForType(type).size();
+
+    if (local < 0 && countLocal > 0) {
+        // если не было сохранено — стартуем с нулевого
+        local = 0;
+    }
+
+    // Если можно перейти на следующий в пределах типа
+    if (local >= 0 && local + 1 < countLocal) {
+        local++;
+        int global = globalIndexFromLocal(m_stations, type, local);
+        if (global >= 0) {
+            m_stations->setLastStationIndex(local, type);
+            const auto& st = m_stations->stations().at(global);
+            m_player->play(st.url);
+        }
+    } else {
+        qWarning() << "[Next] Cannot go past last station of type" << type;
+    }
 }
 
 void MainWindow::onReconnectClicked()
 {
-    playStation(m_listWidget->currentRow());
+    QString type = (modeStack->currentIndex() == 0) ? "radio" : "youtube";
+    int local = m_stations->lastStationIndex(type);
+    qDebug() << "[MainWindow] Reconnect: type=" << type << "lastLocalIndex=" << local;
+    if (local < 0) {
+        qWarning() << "[MainWindow] reconnect: no last index for type" << type;
+        return;
+    }
+    int global = globalIndexFromLocal(m_stations, type, local);
+    if (global < 0 || global >= m_stations->stations().size()) {
+        qWarning() << "[MainWindow] reconnect invalid global index" << global;
+        return;
+    }
+    const auto& st = m_stations->stations().at(global);
+    qDebug() << "[MainWindow] Reconnect playing URL:" << st.url;
+    m_player->play(st.url);
 }
 
 void MainWindow::onVolumeChanged(int value)
@@ -398,8 +484,8 @@ void MainWindow::onVolumeChanged(int value)
 
 void MainWindow::onVolumeMuteClicked()
 {
-    bool now = !m_radio->isMuted();
-    m_radio->setMuted(now);
+    bool now = !m_player->isMuted();
+    m_player->setMuted(now);
     m_volumeMute->setGlyph(
         now
         ? ic_fluent_speaker_off_28_filled
@@ -416,30 +502,59 @@ void MainWindow::onAddClicked()
     }
 }
 
-void MainWindow::onRemoveClicked()
+void MainWindow::onRemoveClicked(int idx)
 {
-    int idx = m_listWidget->currentRow();
-    if (idx >= 0) {
-        m_stations->removeStation(idx);
-        m_stations->save();
+    const auto& list = m_stations->stations();
+    if (idx < 0 || idx >= list.size()) {
+        qWarning() << "[MainWindow] onRemoveClicked: invalid index" << idx;
+        return;
     }
+    m_stations->removeStation(idx);
+    m_stations->save();
 }
 
-void MainWindow::onUpdateClicked()
+void MainWindow::onUpdateClicked(int idx)
 {
-    int idx = m_listWidget->currentRow();
-    if (idx < 0) return;
-    StationDialog dlg(m_stations->stations().at(idx), this);
+    const auto& list = m_stations->stations();
+    if (idx < 0 || idx >= list.size()) {
+        qWarning() << "[MainWindow] onUpdateClicked: invalid index" << idx;
+        return;
+    }
+    StationDialog dlg(list.at(idx), this);
     if (dlg.exec() == QDialog::Accepted) {
         m_stations->updateStation(idx, dlg.station());
         m_stations->save();
     }
 }
 
+void MainWindow::onModeChanged(int newIndex)
+{
+    if (newIndex == m_lastModeIndex) return;
+
+    // Останавливаем плеер на странице, с которой уходим
+    if (m_lastModeIndex == 0) {
+        // уходили с Radio
+        if (radioPage) radioPage->stopPlayback();
+    } else if (m_lastModeIndex == 1) {
+        // уходили с YouTube
+        if (ytPage) ytPage->stopPlayback();
+    }
+
+    // Обновляем индекс последней активной вкладки
+    m_lastModeIndex = newIndex;
+}
+
 void MainWindow::switchLanguage(QAction* action)
 {
     const QString langCode = action->data().toString();
-    QSettings("MyApp","LoraRadio").setValue("language", langCode);
+    QSettings settings(
+        QSettings::IniFormat,
+        QSettings::UserScope,
+        "MyApp",
+        "LoraRadio"
+    );
+    settings.setValue("language", langCode);
+    settings.sync();
 
     QMessageBox::information(
         this,
@@ -474,5 +589,18 @@ void MainWindow::closeEvent(QCloseEvent* event)
     event->ignore();
 }
 
+void MainWindow::onYouTubePlayRequested(const QString &url)
+{
+    qWarning() << "[MainWindow] YouTube play requested:" << url;
 
+    if (url.isEmpty()) {
+        qWarning() << "[MainWindow] Invalid YouTube URL!";
+        return;
+    }
 
+    // Останавливаем всё, что сейчас играет (радио или ютуб)
+    m_player->stop();
+
+    // Запускаем YouTube напрямую
+    m_player->play(url);
+}

@@ -8,6 +8,7 @@
 struct Station {
     QString name;
     QString url;
+    QString type; // "radio" или "youtube"
 };
 
 Q_DECLARE_METATYPE(Station)
@@ -18,9 +19,10 @@ public:
     explicit StationManager(const QString &jsonPath, QObject *parent = nullptr);
 
     const QVector<Station>& stations() const { return m_stations; }
+    QVector<Station> stationsForType(const QString& type) const;
 
-    int  lastStationIndex() const;
-    void setLastStationIndex(int index);
+    int  lastStationIndex(const QString& type) const;
+    void setLastStationIndex(int index, const QString& type);
 
 public slots:
     bool load();
@@ -36,9 +38,7 @@ public slots:
     void stationUpdated(int index);
     void lastStationIndexChanged(int index);
 
-
 private:
     QString m_jsonPath;
     QVector<Station> m_stations;
-    QSettings   m_settings;
 };

@@ -8,9 +8,12 @@ RadioPlayer::RadioPlayer(StationManager* stations, QObject* parent)
     , m_stations(stations)
     , m_player(new QMediaPlayer(this))
     , m_audio(new QAudioOutput(this))
-    , m_settings("MyApp", "LoraRadio")
-    , m_currentVolume(m_settings.value("audio/volume", 50).toInt())
 {
+    {
+            QSettings settings(QSettings::IniFormat, QSettings::UserScope,
+                               "MyApp", "LoraRadio");
+            m_currentVolume = settings.value("volume", 50).toInt();
+          }
     m_player->setAudioOutput(m_audio);
     m_audio->setVolume(m_currentVolume / 100.0);
     emit volumeChanged(m_currentVolume);
@@ -63,11 +66,14 @@ void RadioPlayer::togglePlayback() {
     }
 }
 
-void RadioPlayer::setVolume(int value) {
-    m_currentVolume = value;
-    m_settings.setValue("audio/volume", value);
-    m_audio->setVolume(value / 100.0);
-    emit volumeChanged(value);
+void RadioPlayer::setVolume(int value)
+{
+    if (m_currentVolume != value) {
+        m_currentVolume = value;
+        m_audio->setVolume(value / 100.0);
+        qDebug() << "[RadioPlayer] Volume set to:" << m_currentVolume;
+        emit volumeChanged(value);
+    }
 }
 
 int RadioPlayer::volume() const {
