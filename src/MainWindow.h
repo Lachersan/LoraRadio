@@ -7,7 +7,7 @@
 #include <QStackedWidget>
 #include <QToolButton>
 #include "stationmanager.h"
-#include "../iclude/AbstractPlayer.h"
+#include "../include/AbstractPlayer.h"
 #include "QuickControlPopup.h"
 
 class QListWidget;

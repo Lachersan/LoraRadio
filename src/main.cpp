@@ -7,7 +7,9 @@
 #include "MainWindow.h"
 #include "stationmanager.h"
 #include "RadioPlayer.h"
-#include "../iclude/FontLoader.h"
+#include "YTPlayer.h"
+#include "SwitchPlayer.h"
+#include "../include/FontLoader.h"
 #include <QSettings>
 
 int main(int argc, char *argv[])
@@ -55,7 +57,12 @@ int main(int argc, char *argv[])
         app.installTranslator(&appTrans);
 
     StationManager* stations = new StationManager("stations.json");
-    RadioPlayer* player = new RadioPlayer(stations);
+    RadioPlayer* radio = new RadioPlayer(stations);
+    YTPlayer* ytplayer = new YTPlayer(QStringLiteral(""), nullptr);
+
+    SwitchPlayer* player = new SwitchPlayer(radio, ytplayer, nullptr);
+    qDebug() << "[main] Created SwitchPlayer at" << player;
+
     MainWindow w(stations, player);
 
     int result = app.exec();
@@ -70,6 +77,7 @@ int main(int argc, char *argv[])
         settings.setValue("lastExitCode", result);
         settings.sync();
     }
+
 
     return result;
 }

@@ -4,7 +4,7 @@
 #include <QPointer>
 #include <QListWidget>
 #include "stationmanager.h"
-#include "../iclude/AbstractPlayer.h"
+#include "../include/AbstractPlayer.h"
 
 class QListWidget;
 class QSlider;

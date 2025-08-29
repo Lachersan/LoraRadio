@@ -47,20 +47,22 @@ add_executable(LoraRadio WIN32
         src/QuickControlPopup.cpp
         src/QuickControlPopup.h
         src/IconButton.h
-        iclude/FontLoader.h
-        iclude/IconUtils.h
-        iclude/fluent_icons.h
+        include/FontLoader.h
+        include/IconUtils.h
+        include/fluent_icons.h
         src/IconButton.cpp
         src/MainWindow.cpp
         src/MainWindow.h
         styles/style.qrc
-        iclude/AbstractPlayer.h
+        include/AbstractPlayer.h
         src/YTPlayer.cpp
         src/YTPlayer.h
         src/RadioPage.cpp
         src/RadioPage.h
         src/YouTubePage.cpp
         src/YouTubePage.h
+        src/SwitchPlayer.cpp
+        src/SwitchPlayer.h
 
 )
 target_link_libraries(LoraRadio

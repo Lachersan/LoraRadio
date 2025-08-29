@@ -5,7 +5,7 @@
 #include "StationDialog.h"
 #include "AutoStartRegistry.h"
 #include "IconButton.h"
-#include "../iclude/fluent_icons.h"
+#include "../include/fluent_icons.h"
 #include <QSettings>
 #include <QLabel>
 #include <QMenu>

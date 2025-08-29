@@ -1,5 +1,5 @@
 #include "RadioPage.h"
-#include "../iclude/fluent_icons.h"
+#include "../include/fluent_icons.h"
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>

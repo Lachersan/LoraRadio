@@ -1,5 +1,5 @@
 
-#include "../iclude/AbstractPlayer.h"
+#include "../include/AbstractPlayer.h"
 #include "AutoStartRegistry.h"
 #include <QMediaPlayer>
 #include <QAudioOutput>

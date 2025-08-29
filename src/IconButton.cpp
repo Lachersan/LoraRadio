@@ -1,5 +1,5 @@
 #include "IconButton.h"
-#include "../iclude/FontLoader.h"
+#include "../include/FontLoader.h"
 #include <QPainter>
 #include <QPixmap>
 #include <QFont>
