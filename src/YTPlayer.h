@@ -1,53 +1,73 @@
 #pragma once
+
 #include <QObject>
 #include <QProcess>
-#include <QSettings>
 #include <QTimer>
-#include <QRegularExpression>
+#include <QLocalSocket>
 #include "../include/AbstractPlayer.h"
-#include <../include/mpv/client.h>
 
-class YTPlayer : public AbstractPlayer
-{
+
+class AbstractPlayer; // forward (assume exists)
+
+class YTPlayer : public AbstractPlayer {
     Q_OBJECT
 public:
     explicit YTPlayer(const QString& cookiesFile = QString(), QObject* parent = nullptr);
     ~YTPlayer() override;
 
-public slots:
-    void play(const QString& url) override;
-    void stop() override;
-    void togglePlayback() override;
-    void setVolume(int value) override;
-    int volume() const override;
-    void setMuted(bool muted) override;
-    bool isMuted() const override;
+    // control API
+    void play(const QString& url);
+    void stop();
+    void togglePlayback();
+
+    void setVolume(int value);
+    int volume() const;
+
+    void setMuted(bool muted);
+    bool isMuted() const;
 
     signals:
-        // Сигналы берутся из AbstractPlayer: playbackStateChanged(bool), volumeChanged(int), errorOccurred(QString), mutedChanged(bool)
+        void playbackStateChanged(bool playing);
+    void volumeChanged(int volume);
+    void mutedChanged(bool muted);
+    void errorOccurred(const QString& message);
 
-    private slots:
-    void handleMpvEvents();
+private slots:
+    // yt-dlp
     void onYtdlpReadyRead();
     void onYtdlpFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onYtdlpTimeout();
 
+    // mpv process / IPC
+    void onMpvProcessReadyRead();
+    void onMpvProcessError(QProcess::ProcessError err);
+    void onIpcConnected();
+    void onIpcDisconnected();
+    void onIpcReadyRead();
+
 private:
-    void processMpvEvents();
-    //static void on_mpv_wakeup(void* ctx);
+    // helpers
+    void startMpvProcess();
+    void connectIpc();
+    void sendIpcCommand(const QJsonArray& cmd); // sends {"command": [...]} over IPC
+    void writeLogFile(const QString& name, const QString& contents);
 
-    mpv_handle* mpv = nullptr;
-    QString cookiesFile;
-    int currentVolume = 50;
-    bool playing = false;
-    bool mutedState = false;
-
-    // yt-dlp process (асинхронно)
+    // members
+    QProcess* mpvProcess = nullptr;
     QProcess* ytdlpProcess = nullptr;
-    QByteArray ytdlpStdoutBuffer;
     QTimer* ytdlpTimer = nullptr;
+    QLocalSocket* ipcSocket = nullptr;
+    bool ytdlpTriedManifest = false;
+    int ipcRetryAttempts = 0;
+    const int ipcMaxRetries = 10;
 
-    // временное хранение текущего запроса
+    QByteArray ytdlpStdoutBuffer;
+    QString cookiesFile;
     QString pendingNormalizedUrl;
     bool pendingAllowPlaylist = false;
+
+    QString ipcName = QStringLiteral("ytplayer_ipc"); // can be changed
+    bool playing = false;
+    int currentVolume = 50;
+    bool mutedState = false;
 };
