@@ -28,11 +28,14 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     , cookiesFile(cookiesFile_)
 {
     qDebug() << "[YTPlayer] ctor START";
-    // create processes/timer
     mpvProcess = new QProcess(this);
     ytdlpProcess = new QProcess(this);
     ytdlpTimer = new QTimer(this);
     ytdlpTimer->setSingleShot(true);
+    reconnectTimer = new QTimer(this);
+    reconnectTimer->setSingleShot(true);
+    connect(reconnectTimer, &QTimer::timeout, this, &YTPlayer::tryReconnect);
+
 
     // signals for yt-dlp
     connect(ytdlpProcess, &QProcess::readyReadStandardOutput, this, &YTPlayer::onYtdlpReadyRead);
@@ -45,6 +48,9 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     connect(mpvProcess, &QProcess::readyReadStandardError, this, &YTPlayer::onMpvProcessReadyRead);
     connect(mpvProcess, QOverload<QProcess::ProcessError>::of(&QProcess::errorOccurred),
             this, &YTPlayer::onMpvProcessError);
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [this]() {
+        this->gracefulShutdownMpv(2500);
+    });
 
     // load volume from settings
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
@@ -60,62 +66,10 @@ YTPlayer::~YTPlayer()
 {
     qDebug() << "[YTPlayer] dtor START";
 
-    // 1) Попробуем отправить "quit" через существующий сокет/IPC.
-    auto tryQuitViaIpc = [&]() -> bool {
-        // If we already have a connected ipcSocket — use it.
-        if (ipcSocket && ipcSocket->state() == QLocalSocket::ConnectedState) {
-            sendIpcCommand(QJsonArray{"quit"});
-            // give mpv a moment to exit
-            QThread::msleep(200);
-            return true;
-        }
+    m_shuttingDown = true;
+    gracefulShutdownMpv(5000);  // Увеличьте до 5с для HLS/live, где может быть буфер
 
-        // Otherwise try a temporary connection (in case original socket was destroyed or disconnected).
-        QLocalSocket temp;
-        temp.connectToServer(ipcName);
-        if (!temp.waitForConnected(500)) {
-            qDebug() << "[YTPlayer] temp IPC connect failed:" << temp.errorString();
-            return false;
-        }
-        // send quit
-        QJsonObject root;
-        root.insert("command", QJsonArray{"quit"});
-        QByteArray out = QJsonDocument(root).toJson(QJsonDocument::Compact) + '\n';
-        temp.write(out);
-        temp.flush();
-        temp.waitForBytesWritten(300);
-        temp.disconnectFromServer();
-        return true;
-    };
-
-    // Try to request mpv to quit gracefully
-    bool sentQuit = tryQuitViaIpc();
-
-    // 2) Wait some time for mpvProcess to finish by itself
-    if (mpvProcess) {
-        if (mpvProcess->state() != QProcess::NotRunning) {
-            // If we sent quit, give it a bit longer, otherwise shorter.
-            int waitMs = sentQuit ? 1500 : 500;
-            mpvProcess->waitForFinished(waitMs);
-
-            if (mpvProcess->state() != QProcess::NotRunning) {
-                // Try terminate -> wait -> kill as last resort
-                qWarning() << "[YTPlayer] mpv did not exit after quit; trying terminate()";
-                mpvProcess->terminate();
-                mpvProcess->waitForFinished(800);
-            }
-
-            if (mpvProcess->state() != QProcess::NotRunning) {
-                qWarning() << "[YTPlayer] mpv still running; killing it";
-                mpvProcess->kill();
-                mpvProcess->waitForFinished(800);
-            }
-        }
-        delete mpvProcess;
-        mpvProcess = nullptr;
-    }
-
-    // 3) Clean up IPC socket if still present
+    // Clean up IPC socket
     if (ipcSocket) {
         if (ipcSocket->state() == QLocalSocket::ConnectedState)
             ipcSocket->disconnectFromServer();
@@ -124,14 +78,15 @@ YTPlayer::~YTPlayer()
         ipcSocket = nullptr;
     }
 
-    // 4) Kill yt-dlp if needed
-    if (ytdlpProcess) {
-        if (ytdlpProcess->state() != QProcess::NotRunning) {
-            ytdlpProcess->kill();
-            ytdlpProcess->waitForFinished(300);
-        }
-        delete ytdlpProcess;
-        ytdlpProcess = nullptr;
+    // Kill yt-dlp if needed
+    if (ytdlpProcess && ytdlpProcess->state() != QProcess::NotRunning) {
+        ytdlpProcess->kill();
+        ytdlpProcess->waitForFinished(300);
+    }
+
+    if (mpvProcess) {
+        delete mpvProcess;  // После shutdown, чтобы избежать утечек
+        mpvProcess = nullptr;
     }
 
     qDebug() << "[YTPlayer] dtor END";
@@ -149,12 +104,15 @@ void YTPlayer::startMpvProcess()
          << QStringLiteral("--no-terminal")
          << QStringLiteral("--input-ipc-server=") + ipcName
          << QStringLiteral("--ytdl=no")     // we use yt-dlp externally
-         << QStringLiteral("--msg-level=all=warn")
+         << QStringLiteral("--msg-level=all=debug")
          << QStringLiteral("--no-video")
-         << QStringLiteral("--vo=null");
+         << QStringLiteral("--vo=null")
+         << QStringLiteral("--network-timeout=5")
+         << QStringLiteral("--demuxer-lavf-o=timeout=5000000");
 
     // start
     mpvProcess->start(mpvPath, args);
+    m_mpvPid = mpvProcess->processId();
     if (!mpvProcess->waitForStarted(3000)) {
         QString err = QString("Failed to start mpv (%1). errno: %2")
                           .arg(mpvPath, QString::number(mpvProcess->error()));
@@ -179,47 +137,60 @@ void YTPlayer::connectIpc()
     connect(ipcSocket, &QLocalSocket::connected, this, &YTPlayer::onIpcConnected);
     connect(ipcSocket, &QLocalSocket::disconnected, this, &YTPlayer::onIpcDisconnected);
     connect(ipcSocket, &QLocalSocket::readyRead, this, &YTPlayer::onIpcReadyRead);
+    connect(ipcSocket, &QLocalSocket::errorOccurred, this, &YTPlayer::onIpcError);
 
     ipcRetryAttempts = 0;
-    ipcSocket->connectToServer(ipcName);
-    // wait asynchronously; if not connected soon - we schedule retries
-    QTimer::singleShot(500, this, [this]() {
-        if (!ipcSocket) return;
-        if (ipcSocket->state() == QLocalSocket::ConnectedState) return;
+    while (ipcRetryAttempts <= ipcMaxRetries) {
+        ipcSocket->connectToServer(ipcName);
+        if (ipcSocket->waitForConnected(500)) {
+            return; // success
+        }
         ipcRetryAttempts++;
-        if (ipcRetryAttempts <= ipcMaxRetries) {
-            qDebug() << "[YTPlayer] IPC connect attempt" << ipcRetryAttempts;
-            ipcSocket->connectToServer(ipcName);
-            QTimer::singleShot(500, this, [this]() { connectIpc(); });
-        } else {
+        qDebug() << "[YTPlayer] IPC connect attempt" << ipcRetryAttempts << "failed:" << ipcSocket->errorString();
+        if (ipcRetryAttempts > ipcMaxRetries) {
             qWarning() << "[YTPlayer] IPC connect failed after retries.";
             writeLog("mpv_ipc_connect_err.txt", ipcSocket->errorString());
+            break;
         }
-    });
+        QThread::msleep(500);
+    }
+}
+
+void YTPlayer::onIpcError(QLocalSocket::LocalSocketError error) {
+    qWarning() << "[YTPlayer] IPC socket error:" << error << ipcSocket->errorString();
 }
 
 void YTPlayer::onIpcConnected()
 {
     qDebug() << "[YTPlayer] IPC connected";
-    // set initial volume
-    sendIpcCommand(QJsonArray{"set_property", "volume", currentVolume});
-    if (mutedState) sendIpcCommand(QJsonArray{"set_property", "mute", static_cast<int>(1)});
+    ipcRetryAttempts = 0;
+    sendIpcCommand(QJsonArray{"observe_property", 1, "idle-active"});
 }
 
 void YTPlayer::onIpcDisconnected()
 {
     qWarning() << "[YTPlayer] IPC disconnected";
-    // try reconnect after brief delay
-    QTimer::singleShot(500, this, [this]() { connectIpc(); });
+    if (ipcRetryAttempts < ipcMaxRetries) {
+        ipcRetryAttempts++;
+        int delay = 500 * ipcRetryAttempts; // backoff: 500, 1000, 1500...
+        reconnectTimer->start(delay);
+    } else {
+        qWarning() << "[YTPlayer] Max reconnect attempts reached; not retrying.";
+    }
+}
+
+void YTPlayer::tryReconnect() {
+    connectIpc();
 }
 
 void YTPlayer::onIpcReadyRead()
 {
-    // read responses from mpv (we just log them)
     while (ipcSocket && ipcSocket->bytesAvailable()) {
         QByteArray chunk = ipcSocket->readAll();
+        // Сохраняем в лог-файл, но в консоль выводим только первые 200 символов
         writeLog("mpv_ipc_in.txt", QString::fromUtf8(chunk));
-        qDebug() << "[YTPlayer] mpv ipc ->" << QString::fromUtf8(chunk).left(1024);
+        QString snippet = QString::fromUtf8(chunk).left(200).replace('\n',' ');
+        qDebug() << "[YTPlayer] mpv ipc ->" << snippet;
     }
 }
 
@@ -252,8 +223,121 @@ void YTPlayer::onMpvProcessReadyRead()
 void YTPlayer::onMpvProcessError(QProcess::ProcessError err)
 {
     qWarning() << "[YTPlayer] mpv process error:" << err;
-    writeLog("mpv_proc_err.txt", QString::number(static_cast<int>(err)));
-    emit errorOccurred(QStringLiteral("mpv process error: %1").arg(static_cast<int>(err)));
+    // попытка перезапустить mpv через 500ms
+    QTimer::singleShot(500, this, [this]() {
+        if (!mpvProcess || mpvProcess->state() == QProcess::NotRunning)
+            startMpvProcess();
+    });
+}
+
+bool YTPlayer::sendQuitAndWait(int waitMs)
+{
+    // JSON-команда quit
+    QJsonObject root;
+    root.insert("command", QJsonArray{"quit"});
+    QByteArray out = QJsonDocument(root).toJson(QJsonDocument::Compact) + '\n';
+
+    // 1) Если есть подключенный ipcSocket — используем его.
+    if (ipcSocket && ipcSocket->state() == QLocalSocket::ConnectedState) {
+        qint64 written = ipcSocket->write(out);
+        ipcSocket->flush();
+        if (written <= 0) {
+            qWarning() << "[YTPlayer] sendQuitAndWait: failed to write to existing ipcSocket";
+        } else {
+            ipcSocket->waitForBytesWritten(300);
+            qDebug() << "[YTPlayer] sendQuitAndWait: sent quit via existing ipcSocket";
+        }
+
+        if (waitMs > 0 && mpvProcess) {
+            mpvProcess->waitForFinished(waitMs);
+        }
+        return true;
+    }
+
+    // 2) Попробовать временное синхронное подключение к IPC (в те же pipe/имя).
+    {
+        QLocalSocket temp;
+        temp.connectToServer(ipcName);
+        if (!temp.waitForConnected(500)) {
+            qWarning() << "[YTPlayer] sendQuitAndWait: temp IPC connect failed:" << temp.errorString();
+            return false;
+        }
+        qint64 written = temp.write(out);
+        temp.flush();
+        if (written <= 0) {
+            qWarning() << "[YTPlayer] sendQuitAndWait: temp socket write failed";
+            temp.disconnectFromServer();
+            return false;
+        }
+        temp.waitForBytesWritten(500);
+        temp.disconnectFromServer();
+        qDebug() << "[YTPlayer] sendQuitAndWait: sent quit via temp ipcSocket";
+
+        if (waitMs > 0 && mpvProcess) {
+            mpvProcess->waitForFinished(waitMs);
+        }
+        return true;
+    }
+}
+
+void YTPlayer::gracefulShutdownMpv(int totalWaitMs)
+{
+    if (!mpvProcess) {
+        qDebug() << "[YTPlayer] gracefulShutdownMpv: no mpvProcess";
+        return;
+    }
+    qDebug() << "[YTPlayer] gracefulShutdownMpv: starting with PID" << mpvProcess->processId();
+
+    if (ipcSocket && ipcSocket->state() == QLocalSocket::ConnectedState) {
+        qDebug() << "[YTPlayer] gracefulShutdownMpv: sending 'pause' and 'stop' before quit";
+        sendIpcCommand(QJsonArray{"set_property", "pause", true});  // Пауза, чтобы прервать буфер
+        QThread::msleep(300);
+        sendIpcCommand(QJsonArray{"stop"});  // Остановить playback, освободить ресурсы
+        QThread::msleep(500);  // Время на обработку HLS-демакса
+    } else {
+        qWarning() << "[YTPlayer] gracefulShutdownMpv: IPC not connected, skipping pause/stop";
+    }
+
+    // 1) Попытка quit через IPC
+    bool sent = sendQuitAndWait((totalWaitMs * 40) / 100);
+    qDebug() << "[YTPlayer] gracefulShutdownMpv: quit sent?" << sent;
+
+    // 2) Если жив — terminate
+    if (mpvProcess->state() != QProcess::NotRunning) {
+        qDebug() << "[YTPlayer] gracefulShutdownMpv: still running -> terminate()";
+        if (mpvProcess->state() != QProcess::NotRunning) {
+            qDebug() << "[YTPlayer] gracefulShutdownMpv: closing write channel (stdin)";
+            mpvProcess->closeWriteChannel();  // Закрывает stdin
+            QThread::msleep(200);  // Дайте время mpv отреагировать
+        }
+        mpvProcess->terminate();
+        int part = (totalWaitMs * 30) / 100;
+        if (part < 300) part = 300;
+        mpvProcess->waitForFinished(part);
+    }
+
+    // 3) Если ещё жив — kill
+    if (mpvProcess->state() != QProcess::NotRunning) {
+        qWarning() << "[YTPlayer] gracefulShutdownMpv: terminate failed -> kill()";
+        mpvProcess->kill();
+        int part = totalWaitMs - ((totalWaitMs * 40) / 100) - ((totalWaitMs * 30) / 100);
+        if (part < 500) part = 500;
+        mpvProcess->waitForFinished(part);
+    }
+
+    if (mpvProcess->state() != QProcess::NotRunning) {
+        qWarning() << "[YTPlayer] gracefulShutdownMpv: mpv still alive after kill; forcing taskkill";
+        QProcess killer;
+        killer.start("taskkill", QStringList() << "/PID" << QString::number(mpvProcess->processId()) << "/F" << "/T");  // /F force, /T kill subtree
+        killer.waitForFinished(1000);
+    }
+
+    // Итог
+    if (mpvProcess->state() == QProcess::NotRunning) {
+        qDebug() << "[YTPlayer] gracefulShutdownMpv: mpv exited cleanly";
+    } else {
+        qWarning() << "[YTPlayer] gracefulShutdownMpv: mpv still reported running after all attempts. Possible Qt bug or mpv hang.";
+    }
 }
 
 // --------------------- yt-dlp handling ---------------------
@@ -268,6 +352,10 @@ void YTPlayer::play(const QString& url)
         emit errorOccurred("Empty URL provided");
         return;
     }
+
+    // set initial volume
+    sendIpcCommand(QJsonArray{"set_property", "volume", currentVolume});
+    if (mutedState) sendIpcCommand(QJsonArray{"set_property", "mute", static_cast<int>(1)});
 
     // normalize possible 11-char id
     QString normalized = url.trimmed();

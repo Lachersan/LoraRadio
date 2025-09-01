@@ -11,6 +11,7 @@
 #include "SwitchPlayer.h"
 #include "../include/FontLoader.h"
 #include <QSettings>
+#include <csignal>
 
 int main(int argc, char *argv[])
 {
@@ -77,7 +78,6 @@ int main(int argc, char *argv[])
         settings.setValue("lastExitCode", result);
         settings.sync();
     }
-
 
     return result;
 }

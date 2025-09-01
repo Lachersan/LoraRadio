@@ -19,6 +19,8 @@ public:
     void play(const QString& url);
     void stop();
     void togglePlayback();
+    bool sendQuitAndWait(int waitMs = 1500);
+    void gracefulShutdownMpv(int totalWaitMs = 2500);
 
     void setVolume(int value);
     int volume() const;
@@ -27,7 +29,7 @@ public:
     bool isMuted() const;
 
     signals:
-        void playbackStateChanged(bool playing);
+    void playbackStateChanged(bool playing);
     void volumeChanged(int volume);
     void mutedChanged(bool muted);
     void errorOccurred(const QString& message);
@@ -44,6 +46,7 @@ private slots:
     void onIpcConnected();
     void onIpcDisconnected();
     void onIpcReadyRead();
+    void onIpcError(QLocalSocket::LocalSocketError);
 
 private:
     // helpers
@@ -51,15 +54,17 @@ private:
     void connectIpc();
     void sendIpcCommand(const QJsonArray& cmd); // sends {"command": [...]} over IPC
     void writeLogFile(const QString& name, const QString& contents);
-
+    void tryReconnect();
     // members
     QProcess* mpvProcess = nullptr;
     QProcess* ytdlpProcess = nullptr;
     QTimer* ytdlpTimer = nullptr;
+    QTimer* reconnectTimer = nullptr;
     QLocalSocket* ipcSocket = nullptr;
     bool ytdlpTriedManifest = false;
     int ipcRetryAttempts = 0;
-    const int ipcMaxRetries = 10;
+    const int ipcMaxRetries = 5;
+    qint64 m_mpvPid = 0;
 
     QByteArray ytdlpStdoutBuffer;
     QString cookiesFile;
@@ -70,4 +75,5 @@ private:
     bool playing = false;
     int currentVolume = 50;
     bool mutedState = false;
+    bool m_shuttingDown = false;
 };
