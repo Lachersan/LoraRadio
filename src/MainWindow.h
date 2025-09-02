@@ -54,6 +54,8 @@ private:
     void setupTray();
     void setupConnections();
     int m_lastModeIndex = 0;
+    bool m_isInitializing = true;
+    int m_lastMode = 0;// 0 - Radio, 1 - YouTube
 
     QTabBar            *modeTabBar;
     QStackedWidget     *modeStack;

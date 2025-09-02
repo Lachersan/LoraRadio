@@ -55,9 +55,7 @@ namespace {
     }
 }
 
-// ----------------------------
-// MainWindow
-// ----------------------------
+
 MainWindow::MainWindow(StationManager* stations,
                        AbstractPlayer* player,
                        QWidget* parent)
@@ -69,11 +67,19 @@ MainWindow::MainWindow(StationManager* stations,
     setupTray();
     setupConnections();
 
+    QMetaObject::invokeMethod(this, [this]() {
+    m_isInitializing = false;
+}, Qt::QueuedConnection);
+
     modeTabBar->setCurrentIndex(0);
     m_lastModeIndex = modeTabBar->currentIndex();
 
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
     qDebug() << "[MainWindow] Loaded volume from QSettings (for debug):" << settings.value("volume", 15).toInt();
+
+    m_lastMode = settings.value("lastMode", 0).toInt(); // Завантажуємо останню вкладку
+    modeTabBar->setCurrentIndex(m_lastMode); // Встановлюємо вкладку
+    modeStack->setCurrentIndex(m_lastMode);
 
     // Загружаем список (в очередь, чтобы не блокировать конструктор)
     QMetaObject::invokeMethod(m_stations, "load", Qt::QueuedConnection);
@@ -82,10 +88,9 @@ MainWindow::MainWindow(StationManager* stations,
     QString type = (modeStack && modeStack->currentIndex() == 0) ? QStringLiteral("radio") : QStringLiteral("youtube");
     int lastLocal = m_stations->lastStationIndex(type);
     QMetaObject::invokeMethod(this, [this, lastLocal, type]() {
-        // Перевод локального индекса в глобальный и воспроизведение
         int global = globalIndexFromLocal(m_stations, type, lastLocal);
-        if (global >= 0) playStation(global);
-    }, Qt::QueuedConnection);
+    if (global >= 0) playStation(global);
+}, Qt::QueuedConnection);
 
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
@@ -326,9 +331,13 @@ connect(ytPage, &YouTubePage::requestUpdate, this, [this](int localIdx) {
 
 
     connect(ytPage, &YouTubePage::playRequested, this, [this](const QString &url) {
-    if (m_player) {
-        m_player->stop();
-        m_player->play(url);
+        if (m_isInitializing) {
+            qDebug() << "[MainWindow] Ignored YouTube playRequested during init";
+            return;
+        }
+        if (m_player) {
+            m_player->stop();
+            m_player->play(url);
 
         // Поиск local index
         const QVector<Station> yt = m_stations->stationsForType("youtube");
@@ -376,6 +385,11 @@ connect(ytPage, &YouTubePage::requestUpdate, this, [this](int localIdx) {
 
 void MainWindow::playStation(int idx)
 {
+    if (m_isInitializing) {
+        qDebug() << "[MainWindow] playStation ignored during init";
+        return;
+    }
+
     const auto& list = m_stations->stations();
     if (idx < 0 || idx >= list.size()) {
         qWarning() << "[MainWindow] playStation: invalid index" << idx;
@@ -542,6 +556,9 @@ void MainWindow::onModeChanged(int newIndex)
 
     // Обновляем индекс последней активной вкладки
     m_lastModeIndex = newIndex;
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
+    settings.setValue("lastMode", newIndex);
+    settings.sync();
 }
 
 void MainWindow::switchLanguage(QAction* action)

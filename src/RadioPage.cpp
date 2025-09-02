@@ -18,6 +18,13 @@ RadioPage::RadioPage(StationManager* stations,
     setupUi();
     setupConnections();
     setVolume(m_player->volume());
+    const QVector<Station> radioInit = m_stations->stationsForType(QStringLiteral("radio"));
+    QStringList names;
+    for (const auto& s : radioInit) {
+        names << s.name;
+    }
+    setStations(names);
+
 }
 
 void RadioPage::setupUi()
@@ -66,12 +73,15 @@ void RadioPage::setupConnections()
 {
     // === Обновление списка станций из StationManager ===
     connect(m_stations, &StationManager::stationsChanged,
-            this,       [this](){
-        QStringList names;
-        for (const auto& s : m_stations->stations())
+        this,       [this](){
+    QStringList names;
+    for (const auto& s : m_stations->stations()) {
+        if (s.type == QStringLiteral("radio")) {  // Фільтр по типу
             names << s.name;
-        setStations(names);
-    });
+        }
+    }
+    setStations(names);
+});
 
     // === CRUD‑сигналы страницы вверх в MainWindow ===
     connect(m_btnAdd,    &IconButton::clicked, this, &RadioPage::requestAdd);
