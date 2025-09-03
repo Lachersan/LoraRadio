@@ -88,11 +88,6 @@ MainWindow::MainWindow(StationManager* stations,
     int lastLocal = m_stations->lastStationIndex(type);
     QMetaObject::invokeMethod(this, [this, lastLocal, type]() {
         int global = globalIndexFromLocal(m_stations, type, lastLocal);
-    if (global >= 0) playStation(global);
-}, Qt::QueuedConnection);
-
-    QMetaObject::invokeMethod(this, [this, lastLocal, type]() {
-        int global = globalIndexFromLocal(m_stations, type, lastLocal);
         if (global >= 0) {
             playStation(global);
             m_currentGlobalIdx = global;  // Добавьте

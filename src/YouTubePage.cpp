@@ -233,6 +233,8 @@ void YouTubePage::setupConnections()
 
 void YouTubePage::setStations(const QVector<Station>& stations)
 {
+    m_resultList->blockSignals(true);  // Блокируем сигналы
+
     m_resultList->clear();
     // Отключаем сигналы selectionModel на время заполнения списка, чтобы не срабатывать лишний раз
     auto model = m_resultList->selectionModel();
@@ -240,8 +242,7 @@ void YouTubePage::setStations(const QVector<Station>& stations)
 
     for (const Station &s : stations) {
         QListWidgetItem *it = new QListWidgetItem(s.name.isEmpty() ? s.url : s.name);
-        it->setData(Qt::UserRole, s.url); // url будет использоваться при double-click / play
-        // Дополнительно можно хранить display-type/id если понадобится
+        it->setData(Qt::UserRole, s.url);
         m_resultList->addItem(it);
     }
 
@@ -257,6 +258,8 @@ void YouTubePage::setStations(const QVector<Station>& stations)
     } else if (!stations.isEmpty()) {
         m_resultList->setCurrentRow(0);
     }
+
+    m_resultList->blockSignals(false);  // Разблокируем
 }
 
 void YouTubePage::setCurrentStation(int index) {

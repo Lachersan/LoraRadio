@@ -156,11 +156,11 @@ void StationManager::updateStation(int index, const Station &st)
 
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
     if (old.url != st.url || old.type != st.type) {
+        // Если URL или type изменились, загружаем volume для нового ключа (default 50)
         QString newKey = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
         updated.volume = settings.value(newKey, 50).toInt();
-    } else {
-        updated.volume = old.volume;
     }
+    // Удалите else: updated.volume = old.volume; — это сброс на старое!
 
     m_stations[index] = updated;
 
@@ -169,4 +169,5 @@ void StationManager::updateStation(int index, const Station &st)
         emit stationUpdated(index);
         emit stationsChanged();
     }
+    // Если только volume — ничего не эмитируем
 }

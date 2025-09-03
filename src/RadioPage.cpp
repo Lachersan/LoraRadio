@@ -140,13 +140,15 @@ void RadioPage::setupConnections()
 
 void RadioPage::setStations(const QStringList& names)
 {
+    m_listWidget->blockSignals(true);  // Блокируем сигналы
     m_listWidget->clear();
     m_listWidget->addItems(names);
 
-    // ИЗМЕНЕНО: Восстанавливаем выбор текущей станции
+    // Восстанавливаем выбор текущей станции
     if (m_currentStationIndex >= 0 && m_currentStationIndex < names.size()) {
         m_listWidget->setCurrentRow(m_currentStationIndex);
     }
+    m_listWidget->blockSignals(false);  // Разблокируем
 }
 
 void RadioPage::setCurrentStation(int index) {
