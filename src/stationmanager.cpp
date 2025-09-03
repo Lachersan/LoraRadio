@@ -14,6 +14,10 @@ static QString defaultStationsPath()
     return QDir(appDir).filePath("stations.json");
 }
 
+static QString hashedUrl(const QString& url) {
+    return QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Md5).toHex();
+}
+
 StationManager::StationManager(const QString &jsonPath, QObject *parent)
     : QObject(parent)
     , m_jsonPath(jsonPath.isEmpty()
@@ -48,17 +52,29 @@ bool StationManager::load()
         return false;
 
     m_stations.clear();
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
     for (auto v : doc.array()) {
         auto o = v.toObject();
         Station st;
         st.name = o.value("name").toString();
         st.url  = o.value("url").toString();
         st.type = o.value("type").toString("radio"); // по умолчанию radio
-        if (!st.name.isEmpty() && !st.url.isEmpty())
+        if (!st.name.isEmpty() && !st.url.isEmpty()) {
+            QString key = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
+            st.volume = settings.value(key, 50).toInt();
             m_stations.append(st);
+        }
     }
     emit stationsChanged();
     return true;
+}
+
+void StationManager::saveStationVolume(const Station& st) {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
+    QString key = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
+    settings.setValue(key, st.volume);
+    settings.sync();
+    qDebug() << "[StationManager] Saved volume for" << st.url << ":" << st.volume;
 }
 
 bool StationManager::save() const
@@ -114,9 +130,12 @@ void StationManager::setLastStationIndex(int index, const QString& type)
 
 void StationManager::addStation(const Station &st)
 {
-    m_stations.append(st);
-    int idx = m_stations.size() - 1;
-    emit stationAdded(idx);
+    Station newSt = st;
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
+    QString key = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
+    newSt.volume = settings.value(key, 50).toInt();
+    m_stations.append(newSt);
+    emit stationAdded(m_stations.size() - 1);
     emit stationsChanged();
 }
 
@@ -131,7 +150,23 @@ void StationManager::removeStation(int index)
 void StationManager::updateStation(int index, const Station &st)
 {
     if (index < 0 || index >= m_stations.size()) return;
-    m_stations[index] = st;
-    emit stationUpdated(index);
-    emit stationsChanged();
+
+    const Station &old = m_stations.at(index);
+    Station updated = st;
+
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
+    if (old.url != st.url || old.type != st.type) {
+        QString newKey = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
+        updated.volume = settings.value(newKey, 50).toInt();
+    } else {
+        updated.volume = old.volume;
+    }
+
+    m_stations[index] = updated;
+
+    bool structuralChange = (old.name != st.name) || (old.url != st.url) || (old.type != st.type);
+    if (structuralChange) {
+        emit stationUpdated(index);
+        emit stationsChanged();
+    }
 }

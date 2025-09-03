@@ -19,8 +19,18 @@ public:
                        QWidget* parent = nullptr);
 
     int currentStationIndex() const { return m_listWidget->currentRow(); }
+
+public slots:
+    void setStations(const QStringList& names);
+    void setPlaybackState(bool isPlaying);
+    void setVolume(int value);
+    void setMuted(bool muted);
+    void onVolumeChanged(int value);
+    void stopPlayback();
+    void setCurrentStation(int index);  // New slot to sync list selection
+
     signals:
-    void requestAdd();
+        void requestAdd();
     void requestRemove(int index);
     void requestUpdate(int index);
     void playStation(int index);
@@ -31,14 +41,6 @@ public:
     void reconnect();
     void volumeChanged(int value);
     void muteToggled(bool nowMuted);
-
-public slots:
-    void setStations(const QStringList& names);
-    void setPlaybackState(bool isPlaying);
-    void setVolume(int value);
-    void setMuted(bool muted);
-    void onVolumeChanged(int value);
-    void stopPlayback();
 
 private:
     StationManager*    m_stations;
@@ -58,6 +60,5 @@ private:
     void setupUi();
     void setupConnections();
     bool m_isPlaying = false;
+    int m_currentStationIndex = -1;
 };
-
-

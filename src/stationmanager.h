@@ -4,11 +4,13 @@
 #include <QVector>
 #include <QString>
 #include <QSettings>
+#include <QCryptographicHash>
 
 struct Station {
     QString name;
     QString url;
     QString type; // "radio" или "youtube"
+    int volume;
 };
 
 Q_DECLARE_METATYPE(Station)
@@ -30,7 +32,7 @@ public slots:
     void addStation(const Station &st);
     void removeStation(int index);
     void updateStation(int index, const Station &st);
-
+    void saveStationVolume(const Station& st);
     signals:
     void stationsChanged();
     void stationAdded(int index);

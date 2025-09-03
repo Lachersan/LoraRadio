@@ -14,6 +14,7 @@ RadioPage::RadioPage(StationManager* stations,
   : QWidget(parent)
   , m_stations(stations)
   , m_player(player)
+  , m_currentStationIndex(-1)  // ИЗМЕНЕНО: Инициализация
 {
     setupUi();
     setupConnections();
@@ -25,6 +26,12 @@ RadioPage::RadioPage(StationManager* stations,
     }
     setStations(names);
 
+    // ИЗМЕНЕНО: Инициализируем текущий индекс из lastStationIndex и авто-проигрываем
+    m_currentStationIndex = m_stations->lastStationIndex(QStringLiteral("radio"));
+    if (m_currentStationIndex >= 0 && m_currentStationIndex < radioInit.size()) {
+        m_listWidget->setCurrentRow(m_currentStationIndex);
+        playStation(m_currentStationIndex);
+    }
 }
 
 void RadioPage::setupUi()
@@ -135,6 +142,18 @@ void RadioPage::setStations(const QStringList& names)
 {
     m_listWidget->clear();
     m_listWidget->addItems(names);
+
+    // ИЗМЕНЕНО: Восстанавливаем выбор текущей станции
+    if (m_currentStationIndex >= 0 && m_currentStationIndex < names.size()) {
+        m_listWidget->setCurrentRow(m_currentStationIndex);
+    }
+}
+
+void RadioPage::setCurrentStation(int index) {
+    if (index >= 0 && index < m_listWidget->count()) {
+        m_listWidget->setCurrentRow(index);
+        m_currentStationIndex = index;
+    }
 }
 
 void RadioPage::setPlaybackState(bool isPlaying)
@@ -146,8 +165,8 @@ void RadioPage::setPlaybackState(bool isPlaying)
     }
     m_btnPlay->setGlyph(
         isPlaying
-            ? ic_fluent_play_circle_48_filled
-            : ic_fluent_pause_circle_24_filled
+            ? ic_fluent_pause_circle_24_filled
+            : ic_fluent_play_circle_48_filled
     );
 }
 
@@ -159,24 +178,26 @@ void RadioPage::stopPlayback()
     }
 }
 
+
 void RadioPage::onVolumeChanged(int value)
 {
     qDebug() << "[RadioPage] onVolumeChanged called with value:" << value;
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
-    settings.setValue("volume", value);
-    settings.sync();
-    if (settings.status() != QSettings::NoError) {
-        qWarning() << "[RadioPage] QSettings error:" << settings.status();
-    }
-    qDebug() << "[RadioPage] Saved volume to QSettings:" << settings.value("volume").toInt();
+
     emit volumeChanged(value);
 }
 
 void RadioPage::setVolume(int value)
 {
     qDebug() << "[RadioPage] Setting volume to:" << value;
+
+    m_volumeSlider->blockSignals(true);
+    m_volumeSpin->blockSignals(true);
+
     m_volumeSlider->setValue(value);
     m_volumeSpin->setValue(value);
+
+    m_volumeSlider->blockSignals(false);
+    m_volumeSpin->blockSignals(false);
 }
 
 void RadioPage::setMuted(bool muted)

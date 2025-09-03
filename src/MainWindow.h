@@ -48,6 +48,8 @@ private slots:
     void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
     void switchLanguage(QAction* action);
     void onModeChanged(int newIndex);
+    void onRadioPlayRequested(int localIdx);
+    void onPlayerVolumeChanged(int value);
 
 private:
     void setupUi();
@@ -56,6 +58,7 @@ private:
     int m_lastModeIndex = 0;
     bool m_isInitializing = true;
     int m_lastMode = 0;// 0 - Radio, 1 - YouTube
+    int m_currentGlobalIdx = -1;
 
     QTabBar            *modeTabBar;
     QStackedWidget     *modeStack;

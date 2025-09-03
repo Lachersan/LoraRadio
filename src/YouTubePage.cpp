@@ -1,6 +1,5 @@
 #include "YouTubePage.h"
 #include "../include/fluent_icons.h"
-#include <QLineEdit>
 #include <QListWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -10,12 +9,15 @@
 #include "IconButton.h"
 using namespace fluent_icons;
 
-YouTubePage::YouTubePage(AbstractPlayer* player, QWidget* parent)
+YouTubePage::YouTubePage(StationManager* stations, AbstractPlayer* player, QWidget* parent)
     : QWidget(parent)
+    , m_stations(stations)
     , m_player(player)
 {
     setupUi();
     setupConnections();
+    m_currentStationIndex = m_stations ? m_stations->lastStationIndex(QStringLiteral("youtube")) : -1;
+    if (m_currentStationIndex >= 0) m_resultList->setCurrentRow(m_currentStationIndex);
 
     int initVol = 50;
     if (m_player) initVol = m_player->volume();
@@ -24,11 +26,6 @@ YouTubePage::YouTubePage(AbstractPlayer* player, QWidget* parent)
 
 void YouTubePage::setupUi()
 {
-    // URL input + search button
-    m_urlEdit   = new QLineEdit(this);
-    m_urlEdit->setPlaceholderText(tr("Введите YouTube-URL"));
-    m_btnSearch = new IconButton(ic_fluent_search_28_filled, 28, QColor("#FFF"), tr("Поиск/Воспроизведение"), this);
-
     // Results list
     m_resultList = new QListWidget(this);
 
@@ -51,11 +48,6 @@ void YouTubePage::setupUi()
     m_volumeSpin->setRange(0, 100);
 
     // --- Layouts ---
-    // Search row
-    auto *searchLay = new QHBoxLayout;
-    searchLay->addWidget(m_urlEdit, 1);
-    searchLay->addWidget(m_btnSearch);
-
     // CRUD buttons row under list (same placement as RadioPage stationButtons)
     auto *crudLay = new QHBoxLayout;
     crudLay->addWidget(m_btnAdd);
@@ -63,9 +55,8 @@ void YouTubePage::setupUi()
     crudLay->addWidget(m_btnRemove);
     crudLay->addStretch();
 
-    // Center: search + list + crud buttons
+    // Center: list + crud buttons
     auto *centerLay = new QVBoxLayout;
-    centerLay->addLayout(searchLay);
     centerLay->addWidget(m_resultList, 1);
     centerLay->addLayout(crudLay);
 
@@ -98,19 +89,6 @@ void YouTubePage::setupUi()
 
 void YouTubePage::setupConnections()
 {
-
-
-    // Search button
-    connect(m_btnSearch, &QPushButton::clicked, this, [this]() {
-        const QString query = m_urlEdit->text().trimmed();
-        if (!query.isEmpty()) {
-            qDebug() << "[YouTubePage] Search requested:" << query;
-            emit searchRequested(query);
-        } else {
-            qWarning() << "[YouTubePage] Empty search query";
-        }
-    });
-
     // When current item changes — emit playRequested (selection via keyboard or list navigation)
     connect(m_resultList, &QListWidget::currentItemChanged, this,
         [this](QListWidgetItem *current, QListWidgetItem *previous) {
@@ -214,7 +192,10 @@ void YouTubePage::setupConnections()
     selectionChangedHandler();
     connect(m_resultList->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, selectionChangedHandler);
-    connect(m_resultList, &QListWidget::currentRowChanged, this, selectionChangedHandler);
+    connect(m_resultList, &QListWidget::currentRowChanged, this, [this, selectionChangedHandler](int row) {
+        m_currentStationIndex = row;
+        selectionChangedHandler();
+    });
 
     // Playback controls
     connect(m_btnPlay, &IconButton::clicked, this, [this]() {
@@ -271,35 +252,41 @@ void YouTubePage::setStations(const QVector<Station>& stations)
     m_btnRemove->setEnabled(hasSelection);
     m_btnUpdate->setEnabled(hasSelection);
 
-    if (!stations.isEmpty()) m_resultList->setCurrentRow(0);
+    if (m_currentStationIndex >= 0 && m_currentStationIndex < stations.size()) {
+        m_resultList->setCurrentRow(m_currentStationIndex);
+    } else if (!stations.isEmpty()) {
+        m_resultList->setCurrentRow(0);
+    }
+}
+
+void YouTubePage::setCurrentStation(int index) {
+    if (index >= 0 && index < m_resultList->count()) {
+        m_resultList->setCurrentRow(index);
+        m_currentStationIndex = index;
+    }
 }
 
 void YouTubePage::onVolumeChanged(int value)
 {
     qDebug() << "[YouTubePage] onVolumeChanged:" << value;
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
-    settings.setValue("volume", value);
-    settings.sync();
 
-    // Update UI without feedback loop
-    setVolume(value);
-
-    // Let connected slots (e.g. player) handle the actual change
     emit volumeChanged(value);
 }
 
 void YouTubePage::setVolume(int value)
 {
+    bool sliderOld = m_volumeSlider->blockSignals(true);
+    bool spinOld = m_volumeSpin->blockSignals(true);
+
     if (m_volumeSlider->value() != value) {
-        bool old = m_volumeSlider->blockSignals(true);
         m_volumeSlider->setValue(value);
-        m_volumeSlider->blockSignals(old);
     }
     if (m_volumeSpin->value() != value) {
-        bool old = m_volumeSpin->blockSignals(true);
         m_volumeSpin->setValue(value);
-        m_volumeSpin->blockSignals(old);
     }
+
+    m_volumeSlider->blockSignals(sliderOld);
+    m_volumeSpin->blockSignals(spinOld);
 }
 
 void YouTubePage::setPlaybackState(bool isPlaying)

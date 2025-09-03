@@ -5,7 +5,6 @@
 #include "stationmanager.h"
 #include "../include/AbstractPlayer.h"
 
-class QLineEdit;
 class QListWidget;
 class QSlider;
 class QSpinBox;
@@ -18,12 +17,11 @@ class YouTubePage : public QWidget
 {
     Q_OBJECT
 public:
-    explicit YouTubePage(AbstractPlayer* player, QWidget* parent = nullptr);
+    explicit YouTubePage(StationManager* stations, AbstractPlayer* player, QWidget* parent = nullptr);
     void setStations(const QVector<Station>& stations);
 
     signals:
-    void searchRequested(const QString& query);
-    void playRequested(const QString &url);
+        void playRequested(const QString &url);
 
     // Навигация / управление плейлистом
     void prevRequested();
@@ -42,8 +40,10 @@ public slots:
     void onVolumeChanged(int value);
     void setVolume(int value);
     void setPlaybackState(bool isPlaying);
+    void setCurrentStation(int index);
     void setMuted(bool muted);
     void stopPlayback();
+
 
 private:
     void setupUi();
@@ -51,10 +51,8 @@ private:
     bool m_isPlaying = false;
 
     // UI
-    QLineEdit*   m_urlEdit = nullptr;
     QListWidget* m_resultList = nullptr;
 
-    IconButton*  m_btnSearch = nullptr;
     IconButton*  m_btnAdd = nullptr;
     IconButton*  m_btnRemove = nullptr;
     IconButton*  m_btnUpdate = nullptr;
@@ -68,6 +66,7 @@ private:
     QSlider*     m_volumeSlider = nullptr;
     QSpinBox*    m_volumeSpin = nullptr;
 
-    QPointer<AbstractPlayer> m_player; // nullable pointer to player
+    StationManager* m_stations = nullptr;
+    AbstractPlayer* m_player = nullptr;
+    int m_currentStationIndex = -1;
 };
-
