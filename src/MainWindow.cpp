@@ -62,6 +62,7 @@ MainWindow::MainWindow(StationManager* stations,
     : QMainWindow(parent)
     , m_stations(stations)
     , m_player(player)
+    , ytPlayer(nullptr)
 {
     setupUi();
     setupTray();
@@ -93,6 +94,14 @@ MainWindow::MainWindow(StationManager* stations,
             m_currentGlobalIdx = global;  // Добавьте
         }
     }, Qt::QueuedConnection);
+
+    SwitchPlayer* switchPlayer = qobject_cast<SwitchPlayer*>(m_player);
+    if (switchPlayer) {
+        ytPlayer = switchPlayer->getYTPlayer();
+    }
+    if (!ytPlayer) {
+        qWarning() << "[MainWindow] YTPlayer not accessible!";
+    }
 
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint);
@@ -206,7 +215,7 @@ void MainWindow::setupTray()
     m_trayIcon->show();
 
     m_quickPopup = new QuickControlPopup(m_stations, this);
-    m_quickPopup->setFixedSize(200, 250);
+    m_quickPopup->setFixedSize(250, 300);
 }
 
 void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)

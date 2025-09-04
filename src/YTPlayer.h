@@ -17,6 +17,7 @@ public:
 
     // control API
     void play(const QString& url);
+    void start();
     void stop();
     void togglePlayback();
     bool sendQuitAndWait(int waitMs = 1500);
@@ -76,4 +77,5 @@ private:
     int currentVolume = 50;
     bool mutedState = false;
     bool m_shuttingDown = false;
+    bool m_isRunning = false;
 };

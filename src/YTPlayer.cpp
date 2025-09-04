@@ -26,7 +26,9 @@ static void writeLog(const QString &name, const QString &content) {
 YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     : AbstractPlayer(parent)
     , cookiesFile(cookiesFile_)
+    , m_isRunning(false)
 {
+    ipcName = QString(R"(\\.\pipe\mpv-ipc-%1)").arg(QCoreApplication::applicationPid());  // Уникальное имя по PID, чтобы избежать конфликтов
     qDebug() << "[YTPlayer] ctor START";
     mpvProcess = new QProcess(this);
     ytdlpProcess = new QProcess(this);
@@ -58,6 +60,9 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
 
     // start mpv.exe
     startMpvProcess();
+    if (mpvProcess->state() == QProcess::Running) {
+        m_isRunning = true;
+    }
 
     qDebug() << "[YTPlayer] ctor END";
 }
@@ -65,6 +70,7 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
 YTPlayer::~YTPlayer()
 {
     qDebug() << "[YTPlayer] dtor START";
+    stop();
 
     m_shuttingDown = true;
     gracefulShutdownMpv(5000);  // Увеличьте до 5с для HLS/live, где может быть буфер
@@ -99,6 +105,11 @@ void YTPlayer::startMpvProcess()
     QFile mpvLocal("../thirdparty/libmpv/mpv.exe");
     QString mpvPath = mpvLocal.exists() ? mpvLocal.fileName() : QStringLiteral("mpv");
 
+    if (mpvProcess->state() != QProcess::NotRunning) {
+        qDebug() << "[YTPlayer] mpv already running, skipping start";
+        return;
+    }
+
     QStringList args;
     args << QStringLiteral("--idle") // keep running waiting for commands
          << QStringLiteral("--no-terminal")
@@ -126,14 +137,49 @@ void YTPlayer::startMpvProcess()
     connectIpc();
 }
 
+void YTPlayer::start()
+{
+    if (mpvProcess->state() == QProcess::Running) {
+        qDebug() << "[YTPlayer] mpv process already running, syncing state";
+        m_isRunning = true;
+        connectIpc();
+        return;
+    }
+
+    if (m_isRunning) {
+        qDebug() << "[YTPlayer] Already running, skipping start";
+        return;
+    }
+
+    startMpvProcess();
+    if (mpvProcess->state() == QProcess::NotRunning) {
+        qWarning() << "[YTPlayer] Failed to start mpv process";
+        emit errorOccurred("Failed to start mpv");
+        return;
+    }
+    m_isRunning = true;
+
+    // Восстановите состояние (volume, mute)
+    setVolume(currentVolume);
+    setMuted(mutedState);
+    qDebug() << "[YTPlayer] mpv started successfully";
+}
+
 // --- connect to mpv IPC named pipe via QLocalSocket ---
 void YTPlayer::connectIpc()
 {
+    if (ipcSocket && ipcSocket->state() == QLocalSocket::ConnectedState) {
+        qDebug() << "[YTPlayer] IPC already connected, skipping reconnect";
+        return;
+    }
+
     if (ipcSocket) {
         ipcSocket->abort();
         ipcSocket->deleteLater();
     }
+
     ipcSocket = new QLocalSocket(this);
+
     connect(ipcSocket, &QLocalSocket::connected, this, &YTPlayer::onIpcConnected);
     connect(ipcSocket, &QLocalSocket::disconnected, this, &YTPlayer::onIpcDisconnected);
     connect(ipcSocket, &QLocalSocket::readyRead, this, &YTPlayer::onIpcReadyRead);
@@ -163,6 +209,7 @@ void YTPlayer::onIpcError(QLocalSocket::LocalSocketError error) {
 void YTPlayer::onIpcConnected()
 {
     qDebug() << "[YTPlayer] IPC connected";
+    reconnectTimer->stop();  // Cancel any pending reconnect to prevent cycles
     ipcRetryAttempts = 0;
     sendIpcCommand(QJsonArray{"observe_property", 1, "idle-active"});
 }
@@ -170,9 +217,14 @@ void YTPlayer::onIpcConnected()
 void YTPlayer::onIpcDisconnected()
 {
     qWarning() << "[YTPlayer] IPC disconnected";
+    if (!m_isRunning || m_shuttingDown) {
+        qDebug() << "[YTPlayer] Player not running or shutting down; skipping reconnect";
+        return;
+    }
     if (ipcRetryAttempts < ipcMaxRetries) {
         ipcRetryAttempts++;
         int delay = 500 * ipcRetryAttempts; // backoff: 500, 1000, 1500...
+        reconnectTimer->stop();  // Остановка таймера перед новым запуском, чтобы избежать дубликатов
         reconnectTimer->start(delay);
     } else {
         qWarning() << "[YTPlayer] Max reconnect attempts reached; not retrying.";
@@ -187,10 +239,8 @@ void YTPlayer::onIpcReadyRead()
 {
     while (ipcSocket && ipcSocket->bytesAvailable()) {
         QByteArray chunk = ipcSocket->readAll();
-        // Сохраняем в лог-файл, но в консоль выводим только первые 200 символов
-        writeLog("mpv_ipc_in.txt", QString::fromUtf8(chunk));
-        QString snippet = QString::fromUtf8(chunk).left(200).replace('\n',' ');
-        qDebug() << "[YTPlayer] mpv ipc ->" << snippet;
+        // Убрали writeLog и qDebug для скорости; логируйте только если нужно для дебага
+        // Если требуется обработка JSON, добавьте парсинг здесь
     }
 }
 
@@ -223,6 +273,7 @@ void YTPlayer::onMpvProcessReadyRead()
 void YTPlayer::onMpvProcessError(QProcess::ProcessError err)
 {
     qWarning() << "[YTPlayer] mpv process error:" << err;
+    m_isRunning = false;  // Синхронизируем флаг при ошибке
     // попытка перезапустить mpv через 500ms
     QTimer::singleShot(500, this, [this]() {
         if (!mpvProcess || mpvProcess->state() == QProcess::NotRunning)
@@ -342,8 +393,18 @@ void YTPlayer::gracefulShutdownMpv(int totalWaitMs)
 
 // --------------------- yt-dlp handling ---------------------
 
+
 void YTPlayer::play(const QString& url)
 {
+    if (!m_isRunning) {
+        qDebug() << "[YTPlayer] mpv not running, starting before play";
+        start();
+        if (!m_isRunning) {
+            emit errorOccurred("Failed to start mpv for playback");
+            return;
+        }
+    }
+
     if (!mpvProcess || mpvProcess->state() == QProcess::NotRunning) {
         emit errorOccurred("mpv is not running");
         return;
@@ -517,6 +578,14 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
 // control methods
 void YTPlayer::stop()
 {
+    if (!m_isRunning) {
+        qDebug() << "[YTPlayer] Not running, skipping stop";
+        return;
+    }
+
+    gracefulShutdownMpv(5000);  // Ваш существующий shutdown
+    m_isRunning = false;
+
     if (!ipcSocket || ipcSocket->state() != QLocalSocket::ConnectedState) return;
     sendIpcCommand(QJsonArray{"stop"});
     // clear headers/cookies

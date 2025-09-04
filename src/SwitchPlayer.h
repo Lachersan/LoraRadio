@@ -11,6 +11,7 @@ class SwitchPlayer : public AbstractPlayer {
 public:
     explicit SwitchPlayer(RadioPlayer* radio, YTPlayer* yt, QObject* parent = nullptr);
     ~SwitchPlayer() override;
+    YTPlayer* getYTPlayer() const { return m_yt; }
 
 public slots:
     void play(const QString& url) override;

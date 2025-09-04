@@ -9,6 +9,8 @@
 #include "stationmanager.h"
 #include "../include/AbstractPlayer.h"
 #include "QuickControlPopup.h"
+#include "SwitchPlayer.h"
+#include "YTPlayer.h"  // Добавьте, если не включён через SwitchPlayer
 
 class QListWidget;
 class QSlider;
@@ -89,4 +91,5 @@ private:
     QAction            *m_autostartAction;
     QPoint             m_dragPosition;
     QTranslator        m_translator;
+    YTPlayer           *ytPlayer = nullptr;  // Новый член для доступа к YTPlayer
 };
