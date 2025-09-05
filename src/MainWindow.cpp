@@ -120,6 +120,9 @@ void MainWindow::setupUi()
     m_btnMinimize = new IconButton(ic_fluent_line_horizontal_1_20_filled, 20, QColor("#FFF"), tr("Свернуть"), this);
     m_btnMinimize->setObjectName("btnMinimize");
 
+    m_btnClose->setProperty("role", "system");
+    m_btnMinimize->setProperty("role", "system");
+
     modeTabBar = new QTabBar;
     modeTabBar->addTab(tr("Radio"));
     modeTabBar->addTab(tr("YouTube"));
@@ -149,6 +152,10 @@ void MainWindow::setupUi()
     topLayout->setSpacing(4);
     topLayout->setContentsMargins(2,0,2,0);
 
+    QWidget *topPanel = new QWidget(this);
+    topPanel->setLayout(topLayout);
+    topPanel->setFixedHeight(32);
+
     // Страницы
     radioPage = new RadioPage(m_stations, m_player, this);
     ytPage    = new YouTubePage(m_stations, m_player, this);
@@ -158,8 +165,8 @@ void MainWindow::setupUi()
 
     // Собираем всё вместе в вертикальный лэйаут
     auto *mainLay = new QVBoxLayout;
-    mainLay->addLayout(topLayout);     // таббар + кнопки
-    mainLay->addWidget(modeStack, 1);  // содержимое страниц
+    mainLay->addWidget(topPanel);
+    mainLay->addWidget(modeStack, 1);
 
     auto *central = new QWidget;
     central->setLayout(mainLay);

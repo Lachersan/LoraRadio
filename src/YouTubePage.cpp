@@ -55,10 +55,14 @@ void YouTubePage::setupUi()
     crudLay->addWidget(m_btnRemove);
     crudLay->addStretch();
 
+    QWidget *stationPanel = new QWidget(this);
+    stationPanel->setObjectName("stationPanel");
+
     // Center: list + crud buttons
-    auto *centerLay = new QVBoxLayout;
+    auto *centerLay = new QVBoxLayout(stationPanel);  // Layout теперь в panel
     centerLay->addWidget(m_resultList, 1);
     centerLay->addLayout(crudLay);
+    centerLay->setContentsMargins(0, 0, 0, 0);  // Уберите зазоры
 
     // Control row (same order as RadioPage)
     auto *controlLay = new QHBoxLayout;
@@ -72,8 +76,9 @@ void YouTubePage::setupUi()
     controlLay->addWidget(m_volumeSlider);
 
     auto *mainLay = new QVBoxLayout(this);
-    mainLay->addLayout(centerLay);
+    mainLay->addWidget(stationPanel, 1);  // Добавьте panel вместо centerLay
     mainLay->addLayout(controlLay);
+    mainLay->setContentsMargins(0, 0, 0, 0);
 
     // If no player — disable playback controls
     if (!m_player) {

@@ -130,34 +130,32 @@ QRadioButton::indicator:checked, QCheckBox::indicator:checked {
 }
 
 QTabBar {
-  margin: 0;
-  padding: 0;
-  min-height: 22px;
-  max-height: 22px;
-  background-color: transparent;
+    margin: 0;
+    padding: 0;
+    min-height: 22px;
+    max-height: 22px;
+    background-color: transparent;
 }
 
 QTabBar::tab {
-  min-height: 18px;
-  max-height: 18px;
-  min-width: 120px;
-  max-width: 120px;
-  padding: -2px 8px 0 8px;   /* отрицательный top-padding */
-  margin-top: -2px;
-  border: none;
-  color: #ddd;
-  font-size: 10pt;
+    min-height: 18px;
+    max-height: 18px;
+    min-width: 120px;
+    max-width: 120px;
+    padding: -2px 8px 0 8px;  /* negative top-padding для "сжатия" */
+    margin-top: -2px;
+    border: none;
+    color: #ddd;
+    font-size: 10pt;
 }
 
 QTabBar::tab:selected {
-  color: #fff;
-  border-bottom: 2px solid #558aff;
-
+    color: #fff;
+    border-bottom: 2px solid #558aff;
 }
 
-QTabBar::tab:hover
-{
-  background-color: rgba(85,138,255,0.1);
+QTabBar::tab:hover {
+    background-color: rgba(85,138,255,0.1);
 }
 
 IconButton
@@ -166,12 +164,10 @@ IconButton
     min-height: 36px;
     padding: 4px;
 }
-IconButton[role="system"]
-{
-  min-width: 20px;
-  min-height: 20px;
-  padding: 2px;
-  font-size: 12pt;
+QToolButton, IconButton[role="system"] {  /* Для btnLang, minimize, close */
+    min-height: 30px;
+    max-height: 30px;
+    padding: 0;
 }
 
 IconButton, IconButton:focus, IconButton:pressed
@@ -314,10 +310,12 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
   ListView, TreeView, TableView, ListWidget
 -----------------------------------------------------------------------------*/
 QListView, QTreeView, QTableView {
-  background-color: #2b2b2b;
+  background-color: #000000;
   alternate-background-color: #313131;
   border: 1px solid #444444;
 }
+
+QWidget#stationPanel { background-color: #000000; }
 
 QListView::item:hover, QTreeView::item:hover, QTableView::item:hover {
   background-color: #3d3d3d;
@@ -341,6 +339,8 @@ QListWidget {
 
 QListWidget::item {
   padding: 2px 6px;
+  border-radius: 8px;
+  margin: 2px;
 }
 QListWidget::item:selected {
   background-color: #4a4a4a;
@@ -362,15 +362,26 @@ QTabWidget::pane {
 }
 
 QTabBar::tab {
-  background: #3c3c3c;
-  padding: 6px 12px;
-  border: 1px solid #444444;
+  min-height: 18px;
+  max-height: 18px;
+  min-width: 120px;
+  max-width: 120px;
+  background: transparent;
+  padding: 0 8px;
+  margin: 0;
+  border: none;
   border-bottom: none;
-  margin-right: -1px;
 }
 
-QTabBar::tab:selected, QTabBar::tab:hover {
-  background: #2b2b2b;
+QTabBar::tab:selected {
+    color: #fff;
+    border-bottom: 0px solid #558aff;
+    background: transparent;  /* Без фона для selected */
+}
+
+QTabBar::tab:hover {
+    background: rgba(85,138,255,0.1);
+    border: none;
 }
 
 /*-----------------------------------------------------------------------------

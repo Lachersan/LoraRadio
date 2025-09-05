@@ -57,9 +57,14 @@ void RadioPage::setupUi()
     stationButtons->addWidget(m_btnRemove);
     stationButtons->addStretch();
 
-    auto *stationLay = new QVBoxLayout;
-    stationLay->addWidget(m_listWidget,1);
+    QWidget *stationPanel = new QWidget(this);
+    stationPanel->setObjectName("stationPanel");
+
+
+    auto *stationLay = new QVBoxLayout(stationPanel);  // Layout теперь в panel
+    stationLay->addWidget(m_listWidget, 1);
     stationLay->addLayout(stationButtons);
+    stationLay->setContentsMargins(0, 0, 0, 0);
 
     auto *controlLay = new QHBoxLayout;
     controlLay->addWidget(m_btnReconnect);
@@ -72,8 +77,9 @@ void RadioPage::setupUi()
     controlLay->addWidget(m_volumeSlider);
 
     auto *mainLay = new QVBoxLayout(this);
-    mainLay->addLayout(stationLay);
+    mainLay->addWidget(stationPanel, 1);  // Добавьте panel вместо stationLay (с stretch=1 для занятия пространства)
     mainLay->addLayout(controlLay);
+    mainLay->setContentsMargins(0, 0, 0, 0);
 }
 
 void RadioPage::setupConnections()
