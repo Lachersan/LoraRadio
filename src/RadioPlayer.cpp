@@ -1,157 +1,119 @@
 #include "RadioPlayer.h"
-#include "AutoStartRegistry.h"
+#include "StationManager.h"
 #include <QUrl>
+#include <QDebug>
 
-RadioPlayer::RadioPlayer(StationManager *stations, QObject *parent)
-    : QObject(parent),
-      m_stations(stations),
-      m_player(new QMediaPlayer(this)),
-      m_audio(new QAudioOutput(this)),
-      m_settings("MyApp", "LoraRadio")
+RadioPlayer::RadioPlayer(StationManager* stations, QObject* parent)
+    : AbstractPlayer(parent)
+    , m_stations(stations)
+    , m_player(new QMediaPlayer(this))
+    , m_audio(new QAudioOutput(this))
 {
+    {
+            QSettings settings(QSettings::IniFormat, QSettings::UserScope,
+                               "MyApp", "LoraRadio");
+            m_currentVolume = settings.value("volume", 50).toInt();
+          }
     m_player->setAudioOutput(m_audio);
-
-    m_currentVolume = m_settings.value("audio/volume", 50).toInt();
     m_audio->setVolume(m_currentVolume / 100.0);
+    emit volumeChanged(m_currentVolume);
 
     connect(m_stations, &StationManager::stationsChanged,
             this, &RadioPlayer::emitStationList);
 
-    m_reconnectTimer.setSingleShot(true);
     connect(&m_reconnectTimer, &QTimer::timeout,
             this, &RadioPlayer::reconnectStation);
 
     connect(m_player, &QMediaPlayer::mediaStatusChanged,
-            this,      &RadioPlayer::onMediaStatusChanged);
+            this, &RadioPlayer::onMediaStatusChanged);
+
     connect(m_player, &QMediaPlayer::errorOccurred,
-            this,      &RadioPlayer::onErrorOccurred);
-
-
+            this, &RadioPlayer::onErrorOccurred);
 
     emitStationList();
 }
 
-void RadioPlayer::emitStationList()
-{
-    QStringList names;
-    for (auto &st : m_stations->stations())
-        names << st.name;
+RadioPlayer::~RadioPlayer() {
+    m_player->stop();
+}
 
-    qDebug() << "RadioPlayer emits stationsChanged:" << names;
+void RadioPlayer::emitStationList() {
+    QStringList names;
+    for (const auto& st : m_stations->stations())
+        names << st.name;
     emit stationsChanged(names);
 }
 
-QStringList RadioPlayer::stationNames() const {
-    QStringList names;
-    for (auto &st : m_stations->stations())
-        names << st.name;
-    return names;
-}
-
-
-void RadioPlayer::selectStation(int index)
-{
-    if (index < 0 || index >= m_stations->stations().size()) return;
-    m_currentIndex = index;
-    const Station &st = m_stations->stations().at(index);
+void RadioPlayer::play(const QString& url) {
     m_player->stop();
-    m_player->setSource(QUrl(st.url));
+    m_player->setSource(QUrl(url));
     m_player->play();
+    emit playbackStateChanged(true);
 }
 
-void RadioPlayer::addStation(const Station &st)
-{
-    qDebug() << "Adding station" << st.name;
-
-    m_stations->addStation(st);
-    m_stations->save();
-    emitStationList();
-
+void RadioPlayer::stop() {
+    m_player->stop();
+    emit playbackStateChanged(false);
 }
 
-void RadioPlayer::removeStation(int index)
-{
-    if (index < 0) return;
-    m_stations->removeStation(index);
-    m_stations->save();
-}
-
-void RadioPlayer::updateStation(int index, const Station &st)
-{
-    if (index < 0) return;
-    m_stations->updateStation(index, st);
-    m_stations->save();
-}
-
-void RadioPlayer::togglePlayback()
-{
+void RadioPlayer::togglePlayback() {
     if (m_player->playbackState() == QMediaPlayer::PlayingState) {
         m_player->pause();
+        emit playbackStateChanged(false);
     } else if (m_currentIndex >= 0) {
         m_player->play();
+        emit playbackStateChanged(true);
     }
 }
 
-bool RadioPlayer::isPlaying() const
+void RadioPlayer::setVolume(int value)
 {
-    return m_player->playbackState() == QMediaPlayer::PlayingState;
-}
-
-
-void RadioPlayer::reconnectStation()
-{
-    if (m_currentIndex < 0)
-        return;
-    selectStation(m_currentIndex);
-}
-
-void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
-{
-    if (status == QMediaPlayer::StalledMedia
-     || status == QMediaPlayer::EndOfMedia
-     || status == QMediaPlayer::InvalidMedia)
-    {
-        scheduleReconnect();
+    if (m_currentVolume != value) {
+        m_currentVolume = value;
+        m_audio->setVolume(value / 100.0);
+        qDebug() << "[RadioPlayer] Volume set to:" << m_currentVolume;
+        emit volumeChanged(value);
     }
 }
 
-void RadioPlayer::onErrorOccurred(QMediaPlayer::Error error,
-                                  const QString &errorString)
-{
-    Q_UNUSED(error);
-    qWarning() << "Stream error:" << errorString;
-    scheduleReconnect();
+int RadioPlayer::volume() const {
+    return m_currentVolume;
 }
 
-void RadioPlayer::scheduleReconnect()
-{
-    if (m_reconnectTimer.isActive())
-        return;
-
-    m_reconnectTimer.start(2000);
-}
-
-
-void RadioPlayer::changeVolume(int value)
-{
-    m_currentVolume = value;
-    m_settings.setValue("audio/volume", value);
-    m_audio->setVolume(value / 100.0);
-    emit volumeChanged(value);
-}
-
-void RadioPlayer::setMuted(bool muted)
-{
+void RadioPlayer::setMuted(bool muted) {
     m_audio->setMuted(muted);
+    emit mutedChanged(muted);
 }
 
-bool RadioPlayer::isMuted() const
-{
+bool RadioPlayer::isMuted() const {
     return m_audio->isMuted();
 }
 
-void RadioPlayer::toggleAutostart(bool enabled)
-{
-    m_settings.setValue("autostart/enabled", enabled);
-    AutoStartRegistry::setEnabled(enabled);
+void RadioPlayer::reconnectStation() {
+    if (m_currentIndex >= 0) {
+        const auto& st = m_stations->stations().at(m_currentIndex);
+        play(st.url);
+    }
+}
+
+void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
+    if (status == QMediaPlayer::StalledMedia ||
+        status == QMediaPlayer::EndOfMedia   ||
+        status == QMediaPlayer::InvalidMedia)
+    {
+        scheduleReconnect();
+        if (status == QMediaPlayer::EndOfMedia)
+            emit playbackStateChanged(false);
+    }
+}
+
+void RadioPlayer::onErrorOccurred(QMediaPlayer::Error, const QString& errorString) {
+    qWarning() << "Stream error:" << errorString;
+    scheduleReconnect();
+    emit errorOccurred(errorString);
+}
+
+void RadioPlayer::scheduleReconnect() {
+    if (!m_reconnectTimer.isActive())
+        m_reconnectTimer.start(2000);
 }

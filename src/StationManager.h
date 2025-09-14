@@ -4,10 +4,13 @@
 #include <QVector>
 #include <QString>
 #include <QSettings>
+#include <QCryptographicHash>
 
 struct Station {
     QString name;
     QString url;
+    QString type; // "radio" или "youtube"
+    int volume;
 };
 
 Q_DECLARE_METATYPE(Station)
@@ -18,9 +21,10 @@ public:
     explicit StationManager(const QString &jsonPath, QObject *parent = nullptr);
 
     const QVector<Station>& stations() const { return m_stations; }
+    QVector<Station> stationsForType(const QString& type) const;
 
-    int  lastStationIndex() const;
-    void setLastStationIndex(int index);
+    int  lastStationIndex(const QString& type) const;
+    void setLastStationIndex(int index, const QString& type);
 
 public slots:
     bool load();
@@ -28,7 +32,7 @@ public slots:
     void addStation(const Station &st);
     void removeStation(int index);
     void updateStation(int index, const Station &st);
-
+    void saveStationVolume(const Station& st);
     signals:
     void stationsChanged();
     void stationAdded(int index);
@@ -36,9 +40,7 @@ public slots:
     void stationUpdated(int index);
     void lastStationIndexChanged(int index);
 
-
 private:
     QString m_jsonPath;
     QVector<Station> m_stations;
-    QSettings   m_settings;
 };

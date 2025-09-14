@@ -3,9 +3,15 @@
 #include <QLibraryInfo>
 #include <QFile>
 #include <QDir>
+#include <QTextStream>
 #include "MainWindow.h"
-#include "stationmanager.h"
-#include "../iclude/FontLoader.h"
+#include "StationManager.h"
+#include "RadioPlayer.h"
+#include "YTPlayer.h"
+#include "SwitchPlayer.h"
+#include "../include/FontLoader.h"
+#include <QSettings>
+#include <csignal>
 
 int main(int argc, char *argv[])
 {
@@ -23,8 +29,16 @@ int main(int argc, char *argv[])
         qWarning("Cannot load qdarkstyle qss");
     }
 
-    QSettings settings("MyApp", "LoraRadio");
-    QString lang = settings.value("language", "en").toString();
+    QString lang;
+    {
+        QSettings settings(
+            QSettings::IniFormat,
+            QSettings::UserScope,
+            "MyApp",
+            "LoraRadio"
+        );
+        lang = settings.value("language", "en").toString();
+    }
 
     QTranslator qtTrans;
     bool qtLoaded = qtTrans.load(
@@ -32,23 +46,38 @@ int main(int argc, char *argv[])
         QLibraryInfo::path(QLibraryInfo::TranslationsPath)
     );
     qDebug() << "Qt translation loaded:" << qtLoaded;
-    if (qtLoaded) {
+    if (qtLoaded)
         app.installTranslator(&qtTrans);
-    }
 
     QTranslator appTrans;
     bool appLoaded = appTrans.load(
         QString(":/translations/translations/loraradio_%1.qm").arg(lang)
     );
     qDebug() << "App translation loaded:" << appLoaded;
-    if (appLoaded) {
+    if (appLoaded)
         app.installTranslator(&appTrans);
+
+    StationManager* stations = new StationManager("stations.json");
+    RadioPlayer* radio = new RadioPlayer(stations);
+    YTPlayer* ytplayer = new YTPlayer(QStringLiteral(""), nullptr);
+
+    SwitchPlayer* player = new SwitchPlayer(radio, ytplayer, nullptr);
+    qDebug() << "[main] Created SwitchPlayer at" << player;
+
+    MainWindow w(stations, player);
+
+    int result = app.exec();
+
+    {
+        QSettings settings(
+            QSettings::IniFormat,
+            QSettings::UserScope,
+            "MyApp",
+            "LoraRadio"
+        );
+        settings.setValue("lastExitCode", result);
+        settings.sync();
     }
 
-
-    StationManager *stations = new StationManager("stations.json");
-    MainWindow w(stations);
-    w.show();
-
-    return app.exec();
+    return result;
 }

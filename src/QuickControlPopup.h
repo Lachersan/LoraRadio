@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
-#include "stationmanager.h"
+#include "StationManager.h"
 
 
 
@@ -25,9 +25,13 @@ public slots:
     void updateStations();
 
     signals:
-    void stationSelected(int index);
+        void stationSelected(int index);
     void reconnectRequested();
     void volumeChanged(int value);
+
+private slots:
+    void onTabChanged(int index);
+    void onStationSelected(int localIdx);
 
 private:
     QTabBar *tabBar;
@@ -36,4 +40,5 @@ private:
     QPushButton *btnReconnect;
     QSlider     *volumeSlider;
     QSpinBox    *volumeSpin;
+    int m_currentTab = 0;
 };

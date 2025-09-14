@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QDialog>
-#include "stationmanager.h"
+#include "StationManager.h"
 
 namespace Ui {
     class StationDialog;

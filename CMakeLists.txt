@@ -11,6 +11,11 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_PREFIX_PATH "F:/Qt/6.9.0/mingw_64")
 set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty/libmpv/include)
+
+link_directories(${CMAKE_SOURCE_DIR}/thirdparty/libmpv)
+
+
 find_package(Qt6 COMPONENTS
         Core
         Gui
@@ -42,21 +47,38 @@ add_executable(LoraRadio WIN32
         src/QuickControlPopup.cpp
         src/QuickControlPopup.h
         src/IconButton.h
-        iclude/FontLoader.h
-        iclude/IconUtils.h
-        iclude/fluent_icons.h
+        include/FontLoader.h
+        include/IconUtils.h
+        include/fluent_icons.h
         src/IconButton.cpp
         src/MainWindow.cpp
         src/MainWindow.h
         styles/style.qrc
+        include/AbstractPlayer.h
+        src/YTPlayer.cpp
+        src/YTPlayer.h
+        src/RadioPage.cpp
+        src/RadioPage.h
+        src/YouTubePage.cpp
+        src/YouTubePage.h
+        src/SwitchPlayer.cpp
+        src/SwitchPlayer.h
 
 )
 target_link_libraries(LoraRadio
+        mpv
         Qt::Core
         Qt::Gui
         Qt::Widgets
         Qt::Multimedia
 )
+
+add_custom_command(TARGET LoraRadio POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/thirdparty/libmpv/libmpv-2.dll
+        $<TARGET_FILE_DIR:LoraRadio>
+)
+
 
 
 set(WINDEPLOYQT_PATH "F:/Qt/6.9.0/mingw_64/bin/windeployqt.exe")

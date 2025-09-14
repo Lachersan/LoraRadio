@@ -1,5 +1,5 @@
 #include "IconButton.h"
-#include "../iclude/FontLoader.h"
+#include "../include/FontLoader.h"
 #include <QPainter>
 #include <QPixmap>
 #include <QFont>
@@ -22,6 +22,10 @@ IconButton::IconButton(const QString& glyphUtf8,
 
 void IconButton::setGlyph(const QString& glyphUtf8)
 {
+    if (this->parent() == nullptr && !this->window()) {
+        qWarning() << "[IconButton] called on destroyed or orphaned object";
+        return;
+    }
     if (glyphUtf8 == m_glyph) return;
     m_glyph = glyphUtf8;
     updateIcon();

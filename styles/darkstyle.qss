@@ -129,49 +129,16 @@ QRadioButton::indicator:checked, QCheckBox::indicator:checked {
   background: #3465a4;
 }
 
-QTabBar {
-  margin: 0;
-  padding: 0;
-  min-height: 22px;
-  max-height: 22px;
-  background-color: transparent;
-}
-
-QTabBar::tab {
-  min-height: 18px;
-  max-height: 18px;
-  min-width: 120px;
-  max-width: 120px;
-  padding: -2px 8px 0 8px;   /* отрицательный top-padding */
-  margin-top: -2px;
-  border: none;
-  color: #ddd;
-  font-size: 10pt;
-}
-
-QTabBar::tab:selected {
-  color: #fff;
-  border-bottom: 2px solid #558aff;
-
-}
-
-QTabBar::tab:hover
-{
-  background-color: rgba(85,138,255,0.1);
-}
-
 IconButton
 {
     min-width: 36px;
     min-height: 36px;
     padding: 4px;
 }
-IconButton[role="system"]
-{
-  min-width: 20px;
-  min-height: 20px;
-  padding: 2px;
-  font-size: 12pt;
+QToolButton, IconButton[role="system"] {  /* Для btnLang, minimize, close */
+    min-height: 30px;
+    max-height: 30px;
+    padding: 0;
 }
 
 IconButton, IconButton:focus, IconButton:pressed
@@ -314,10 +281,12 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
   ListView, TreeView, TableView, ListWidget
 -----------------------------------------------------------------------------*/
 QListView, QTreeView, QTableView {
-  background-color: #2b2b2b;
+  background-color: #000000;
   alternate-background-color: #313131;
   border: 1px solid #444444;
 }
+
+QWidget#stationPanel { background-color: #000000; }
 
 QListView::item:hover, QTreeView::item:hover, QTableView::item:hover {
   background-color: #3d3d3d;
@@ -341,6 +310,8 @@ QListWidget {
 
 QListWidget::item {
   padding: 2px 6px;
+  border-radius: 8px;
+  margin: 2px;
 }
 QListWidget::item:selected {
   background-color: #4a4a4a;
@@ -351,28 +322,97 @@ QListWidget::item:hover {
   background-color: #3a3a3a;
 }
 
-
-
 /*-----------------------------------------------------------------------------
-  TabWidget
+  TabWidget - ИСПРАВЛЕННЫЕ СТИЛИ
 -----------------------------------------------------------------------------*/
 QTabWidget::pane {
-  border: 1px solid #444444;
-  background-color: #2b2b2b;
+    border: none;
+    background-color: transparent;
+    top: 0px;  /* Отрицательный отступ для плотной компоновки */
+    margin: 0px;
+    padding: 0px;
 }
 
+QTabWidget::tab-bar {
+    alignment: left;
+    top: 0px;
+}
+
+QTabBar {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    margin: 0px;
+    padding: 0px;
+    spacing: 4px;  /* Убираем промежутки между вкладками */
+    qproperty-drawBase: false;
+}
+
+/* Обычные вкладки (не выбранные) */
 QTabBar::tab {
-  background: #3c3c3c;
-  padding: 6px 12px;
-  border: 1px solid #444444;
-  border-bottom: none;
-  margin-right: -1px;
+    background-color: #000000;  /* Черный фон */
+    color: #ffffff;             /* Белый текст */
+    border: none;
+    outline: none;
+    padding: 6px 12px;           /* Минимальные отступы */
+    margin: 3px;                /* Убираем отступы между вкладками */
+    border-radius: 10px;         /* Небольшое закругление */
+    min-width: 40px;            /* Минимальная ширина */
+    max-width: 80px;            /* Максимальная ширина */
+    min-height: 16px;           /* Минимальная высота */
+    max-height: 24px;           /* Максимальная высота */
+    font-size: 12px;            /* Маленький шрифт */
 }
 
-QTabBar::tab:selected, QTabBar::tab:hover {
-  background: #2b2b2b;
+/* Выбранная вкладка */
+QTabBar::tab:selected {
+    background-color: #ffffff;  /* Белый фон */
+    color: #000000;             /* Черный текст */
+    border: none;
+    outline: none;
+    border-radius: 10px;
 }
 
+/* Эффект при наведении */
+QTabBar::tab:hover:!selected {
+    background-color: #333333;
+    outline: none;
+}
+
+/* Убираем лишние элементы */
+QTabBar::scroller {
+    width: 0px;
+}
+
+QTabBar::tear {
+    width: 0px;
+    border: none;
+}
+
+QTabBar::tab:first {
+    margin-left: 0px;
+}
+
+QTabBar::tab:last {
+    margin-right: 0px;
+}
+
+QTabBar QToolButton {
+    border: none;
+    background-color: transparent;
+}
+
+QTabWidget QTabBar::tab {
+    border-bottom: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+QTabWidget QTabBar {
+    border: none;
+    background: none;
+}
 /*-----------------------------------------------------------------------------
   ProgressBar
 -----------------------------------------------------------------------------*/
