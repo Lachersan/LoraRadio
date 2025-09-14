@@ -169,5 +169,4 @@ void StationManager::updateStation(int index, const Station &st)
         emit stationUpdated(index);
         emit stationsChanged();
     }
-    // Если только volume — ничего не эмитируем
 }

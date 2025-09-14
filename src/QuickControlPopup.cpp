@@ -5,7 +5,7 @@
 #include <QSpinBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>  // Добавьте, если не было
-#include "stationmanager.h"
+#include "StationManager.h"
 
 namespace {
     // Найти глобальный индекс N-го элемента типа `type` (nLocal) в общем списке.

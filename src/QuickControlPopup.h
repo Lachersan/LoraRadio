@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
-#include "stationmanager.h"
+#include "StationManager.h"
 
 
 

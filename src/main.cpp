@@ -5,7 +5,7 @@
 #include <QDir>
 #include <QTextStream>
 #include "MainWindow.h"
-#include "stationmanager.h"
+#include "StationManager.h"
 #include "RadioPlayer.h"
 #include "YTPlayer.h"
 #include "SwitchPlayer.h"

@@ -3,7 +3,7 @@
 #include <QWidget>
 #include <QPointer>
 #include <QListWidget>
-#include "stationmanager.h"
+#include "StationManager.h"
 #include "../include/AbstractPlayer.h"
 
 class QListWidget;

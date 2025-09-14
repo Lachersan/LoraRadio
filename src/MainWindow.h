@@ -6,7 +6,7 @@
 #include <QActionGroup>
 #include <QStackedWidget>
 #include <QToolButton>
-#include "stationmanager.h"
+#include "StationManager.h"
 #include "../include/AbstractPlayer.h"
 #include "QuickControlPopup.h"
 #include "SwitchPlayer.h"
