@@ -7,11 +7,21 @@
 #include <QJsonObject>
 #include <QCoreApplication>
 #include <QSettings>
+#include <QStandardPaths>
 
 static QString defaultStationsPath()
 {
-    QString appDir = QCoreApplication::applicationDirPath();
-    return QDir(appDir).filePath("stations.json");
+    // Принудительно используем стандартную директорию настроек
+    QString configPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (configPath.isEmpty()) {
+        // Fallback для старых версий Qt или проблем с системой
+        configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/MyApp";
+    }
+
+    // Создаем директорию если её нет
+    QDir().mkpath(configPath);
+
+    return QDir(configPath).filePath("stations.json");
 }
 
 static QString hashedUrl(const QString& url) {
@@ -25,7 +35,10 @@ StationManager::StationManager(const QString &jsonPath, QObject *parent)
                  : jsonPath)
 {
     if (!QFile::exists(m_jsonPath)) {
+        // Создаем директорию если её нет
         QDir().mkpath(QFileInfo(m_jsonPath).path());
+
+        // Копируем дефолтный файл из ресурсов
         QFile res(":/stations_default.json");
         if (res.open(QIODevice::ReadOnly)) {
             QFile out(m_jsonPath);
@@ -141,8 +154,18 @@ void StationManager::addStation(const Station &st)
 
 void StationManager::removeStation(int index)
 {
-    if (index < 0 || index >= m_stations.size()) return;
+    qDebug() << "[StationManager] removeStation called with index:" << index;
+    qDebug() << "[StationManager] Total stations before removal:" << m_stations.size();
+
+    if (index < 0 || index >= m_stations.size()) {
+        qWarning() << "[StationManager] Invalid index:" << index;
+        return;
+    }
+
+    qDebug() << "[StationManager] Removing station:" << m_stations.at(index).name;
     m_stations.remove(index);
+    qDebug() << "[StationManager] Total stations after removal:" << m_stations.size();
+
     emit stationRemoved(index);
     emit stationsChanged();
 }
@@ -160,7 +183,6 @@ void StationManager::updateStation(int index, const Station &st)
         QString newKey = QString("volumes/%1/%2").arg(st.type).arg(hashedUrl(st.url));
         updated.volume = settings.value(newKey, 50).toInt();
     }
-    // Удалите else: updated.volume = old.volume; — это сброс на старое!
 
     m_stations[index] = updated;
 

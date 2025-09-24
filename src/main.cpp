@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
+    QCoreApplication::setOrganizationName("MyApp");
+    QCoreApplication::setApplicationName("LoraRadio");
+
     QDir::setCurrent(QCoreApplication::applicationDirPath());
 
     loadFluentIconsFont();
@@ -57,7 +60,7 @@ int main(int argc, char *argv[])
     if (appLoaded)
         app.installTranslator(&appTrans);
 
-    StationManager* stations = new StationManager("stations.json");
+    StationManager* stations = new StationManager("");
     RadioPlayer* radio = new RadioPlayer(stations);
     YTPlayer* ytplayer = new YTPlayer(QStringLiteral(""), nullptr);
 

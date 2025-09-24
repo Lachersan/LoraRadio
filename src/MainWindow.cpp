@@ -295,14 +295,29 @@ connect(ytPage, &YouTubePage::requestAdd, this, [this]() {
     }
 });
 
-connect(ytPage, &YouTubePage::requestRemove, this, [this](int localIdx) {
+    connect(ytPage, &YouTubePage::requestRemove, this, [this](int localIdx) {
     const QString type = QStringLiteral("youtube");
     const int global = globalIndexFromLocal(m_stations, type, localIdx);
-    if (global >= 0) {
-        m_stations->removeStation(global);
-        m_stations->save(); // save() -> stationsChanged -> ytPage обновится
-    } else {
+
+    if (global < 0) {
         qWarning() << "[MainWindow] YouTube remove: cannot map local index" << localIdx;
+        return;
+    }
+
+    // ДОБАВИТЬ: Диалог подтверждения удаления
+    const Station& station = m_stations->stations().at(global);
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Подтверждение удаления"));
+    msgBox.setText(tr("Удалить станцию \"%1\"?").arg(station.name));
+    msgBox.setInformativeText(tr("Это действие нельзя отменить."));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    msgBox.setIcon(QMessageBox::Warning);
+
+    if (msgBox.exec() == QMessageBox::Yes) {
+        m_stations->removeStation(global);
+        m_stations->save();
     }
 });
 
@@ -601,8 +616,23 @@ void MainWindow::onRemoveClicked(int idx)
         qWarning() << "[MainWindow] onRemoveClicked: invalid index" << idx;
         return;
     }
-    m_stations->removeStation(idx);
-    m_stations->save();
+
+    const Station& station = list.at(idx);
+
+    // Диалог подтверждения удаления
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Подтверждение удаления"));
+    msgBox.setText(tr("Удалить станцию \"%1\"?").arg(station.name));
+    msgBox.setInformativeText(tr("Это действие нельзя отменить."));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+    msgBox.setIcon(QMessageBox::Warning);
+
+
+    if (msgBox.exec() == QMessageBox::Yes) {
+        m_stations->removeStation(idx);
+        m_stations->save();
+    }
 }
 
 void MainWindow::onUpdateClicked(int idx)

@@ -128,25 +128,7 @@ void YouTubePage::setupConnections()
 
     connect(m_btnAdd, &IconButton::clicked, this, &YouTubePage::requestAdd);
 
-    // Remove — берем текущую строку и валидируем относительно количества элементов в списке
-    connect(m_btnRemove, &IconButton::clicked, this, [this]() {
-        int idx = m_resultList->currentRow();
-        if (idx < 0 || idx >= m_resultList->count()) {
-            qWarning() << "[YouTubePage] requestRemove: invalid idx" << idx;
-            return;
-        }
-        emit requestRemove(idx);
-    });
-
-    // Update — аналогично Remove
-    connect(m_btnUpdate, &IconButton::clicked, this, [this]() {
-        int idx = m_resultList->currentRow();
-        if (idx < 0 || idx >= m_resultList->count()) {
-            qWarning() << "[YouTubePage] requestUpdate: invalid idx" << idx;
-            return;
-        }
-        emit requestUpdate(idx);
-    });
+    // УДАЛИЛИ ДУБЛИРУЮЩИЙСЯ ОБРАБОТЧИК для m_btnRemove
 
     // CRUD buttons
     connect(m_btnPlay, &IconButton::clicked, this, [this]() {
@@ -167,6 +149,7 @@ void YouTubePage::setupConnections()
         return -1;
     };
 
+    // ОСТАВЛЯЕМ ТОЛЬКО ЭТОТ обработчик для m_btnRemove
     connect(m_btnRemove, &IconButton::clicked, this, [this, getSelectedIndex]() {
         int idx = getSelectedIndex();
         if (idx < 0) {
