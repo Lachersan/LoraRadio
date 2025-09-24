@@ -154,8 +154,18 @@ void StationManager::addStation(const Station &st)
 
 void StationManager::removeStation(int index)
 {
-    if (index < 0 || index >= m_stations.size()) return;
+    qDebug() << "[StationManager] removeStation called with index:" << index;
+    qDebug() << "[StationManager] Total stations before removal:" << m_stations.size();
+
+    if (index < 0 || index >= m_stations.size()) {
+        qWarning() << "[StationManager] Invalid index:" << index;
+        return;
+    }
+
+    qDebug() << "[StationManager] Removing station:" << m_stations.at(index).name;
     m_stations.remove(index);
+    qDebug() << "[StationManager] Total stations after removal:" << m_stations.size();
+
     emit stationRemoved(index);
     emit stationsChanged();
 }

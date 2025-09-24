@@ -145,6 +145,8 @@ void YTPlayer::play(const QString& url)
         return;
     }
 
+    stop();
+
     // normalize possible 11-char id
     QString normalized = url.trimmed();
     QRegularExpression rx("^[A-Za-z0-9_-]{11}$");
