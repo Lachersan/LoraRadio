@@ -40,6 +40,7 @@ private slots:
     void onYtdlpReadyRead();
     void onYtdlpFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onYtdlpTimeout();
+    void onYtdlpReadyReadError();
 
     // libVLC events (no slots needed, use static callbacks)
 
@@ -47,6 +48,7 @@ private:
     // libVLC members
     libvlc_instance_t *m_instance = nullptr;
     libvlc_media_player_t *m_player = nullptr;
+    libvlc_media_t* m_currentMedia = nullptr;
 
     // Static libVLC event callbacks
     static void onMediaEndReached(const libvlc_event_t *event, void *user_data);
