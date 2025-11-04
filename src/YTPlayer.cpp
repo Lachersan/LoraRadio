@@ -26,7 +26,6 @@ static void writeLog(const QString &name, const QString &content) {
 YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     : AbstractPlayer(parent)
     , m_cookiesFile(cookiesFile_)
-    , m_isRunning(false)
 {
     qDebug() << "[YTPlayer] ctor START";
 
@@ -39,10 +38,7 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
         "--http-reconnect",
         "--aout=directsound",
         "--plugin-path=./plugins",
-        "--lua-intf=luaintf",
-        "--verbose=2",         // Detailed logs
-        "--file-logging",      // Enable file logging
-        "--logfile=logs/vlc_log.txt"  // Log to <exe_dir>/logs/vlc_log.txt (create logs dir if needed)
+        "--lua-intf=luaintf"
     };
     m_instance = libvlc_new(sizeof(vlc_args) / sizeof(vlc_args[0]), vlc_args);
     if (!m_instance) {
