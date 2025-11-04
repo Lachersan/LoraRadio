@@ -30,16 +30,13 @@ private slots:
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
     void onErrorOccurred(QMediaPlayer::Error error,
                          const QString& errorString);
-    void reconnectStation();
 
 private:
     void emitStationList();
-    void scheduleReconnect();
 
     StationManager* m_stations;
     QMediaPlayer*   m_player;
     QAudioOutput*   m_audio;
-    QTimer          m_reconnectTimer;
     int             m_currentVolume;
     int             m_currentIndex{-1};
 };

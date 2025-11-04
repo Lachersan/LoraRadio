@@ -21,8 +21,6 @@ RadioPlayer::RadioPlayer(StationManager* stations, QObject* parent)
     connect(m_stations, &StationManager::stationsChanged,
             this, &RadioPlayer::emitStationList);
 
-    connect(&m_reconnectTimer, &QTimer::timeout,
-            this, &RadioPlayer::reconnectStation);
 
     connect(m_player, &QMediaPlayer::mediaStatusChanged,
             this, &RadioPlayer::onMediaStatusChanged);
@@ -89,19 +87,12 @@ bool RadioPlayer::isMuted() const {
     return m_audio->isMuted();
 }
 
-void RadioPlayer::reconnectStation() {
-    if (m_currentIndex >= 0) {
-        const auto& st = m_stations->stations().at(m_currentIndex);
-        play(st.url);
-    }
-}
 
 void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
     if (status == QMediaPlayer::StalledMedia ||
         status == QMediaPlayer::EndOfMedia   ||
         status == QMediaPlayer::InvalidMedia)
     {
-        scheduleReconnect();
         if (status == QMediaPlayer::EndOfMedia)
             emit playbackStateChanged(false);
     }
@@ -109,11 +100,5 @@ void RadioPlayer::onMediaStatusChanged(QMediaPlayer::MediaStatus status) {
 
 void RadioPlayer::onErrorOccurred(QMediaPlayer::Error, const QString& errorString) {
     qWarning() << "Stream error:" << errorString;
-    scheduleReconnect();
     emit errorOccurred(errorString);
-}
-
-void RadioPlayer::scheduleReconnect() {
-    if (!m_reconnectTimer.isActive())
-        m_reconnectTimer.start(2000);
 }
