@@ -203,14 +203,6 @@ void YTPlayer::play(const QString& url)
     args << pendingNormalizedUrl;
 
     ytdlpProcess->setArguments(args);
-    qDebug() << "[YTPlayer] Starting yt-dlp with args:" << args;
-    ytdlpProcess->start();
-    if (!ytdlpProcess->waitForStarted(3000)) {
-        qWarning() << "[YTPlayer] yt-dlp failed to start";
-        emit errorOccurred("yt-dlp failed to start");
-        return;
-    }
-    qDebug() << "[YTPlayer] Starting yt-dlp with program:" << prog << " args:" << args.join(" ");
 
     ytdlpProcess->start();
     if (!ytdlpProcess->waitForStarted(3000)) {
