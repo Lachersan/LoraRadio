@@ -1,7 +1,5 @@
 #include "YouTubePage.h"
 #include "../include/fluent_icons.h"
-#include <QListWidget>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidgetItem>
 #include <QSlider>

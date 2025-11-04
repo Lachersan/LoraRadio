@@ -3,7 +3,6 @@
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include "IconButton.h"
 using namespace fluent_icons;

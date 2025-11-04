@@ -12,12 +12,10 @@
 #include <QListWidget>
 #include <QStackedWidget>
 #include <QLineEdit>
-#include <QListWidgetItem>
 #include <QSlider>
 #include <QSpinBox>
 #include <QMessageBox>
 #include <QToolButton>
-#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMouseEvent>
 #include <QCursor>

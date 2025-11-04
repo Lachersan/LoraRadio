@@ -1,7 +1,5 @@
 #include <QApplication>
-#include <QTranslator>
 #include <QLibraryInfo>
-#include <QFile>
 #include <QDir>
 #include <QTextStream>
 #include "MainWindow.h"
@@ -14,7 +12,6 @@
 #include <csignal>
 #include <QMessageLogger>
 #include <QFile>
-#include <QTextStream>
 #include <QDateTime>
 #include <QStandardPaths>
 
