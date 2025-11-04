@@ -19,9 +19,15 @@ public:
     virtual void setMuted(bool muted) = 0;
     virtual bool isMuted() const = 0;
 
+    virtual bool supportsFeature(const QString& feature) const { return false; }
+    virtual void setCookiesFile(const QString& path) { Q_UNUSED(path); }
+    virtual QString cookiesFile() const { return QString(); }
+    virtual bool sendQuitAndWait(int waitMs = 1500) { Q_UNUSED(waitMs); return false; }
+
     signals:
-        void playbackStateChanged(bool isPlaying);
+    void playbackStateChanged(bool isPlaying);
     void volumeChanged(int value);
     void mutedChanged(bool muted);
     void errorOccurred(const QString& errorString);
+    void featureChanged(const QString& feature, bool enabled);
 };

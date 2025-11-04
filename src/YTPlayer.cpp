@@ -26,7 +26,7 @@ static void writeLog(const QString &name, const QString &content) {
 
 YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     : AbstractPlayer(parent)
-    , cookiesFile(cookiesFile_)
+    , m_cookiesFile(cookiesFile_)
     , m_isRunning(false)
 {
     qDebug() << "[YTPlayer] ctor START";
@@ -197,8 +197,8 @@ void YTPlayer::play(const QString& url)
     else
         args << QStringLiteral("--no-playlist");
 
-    if (!cookiesFile.isEmpty())
-        args << QStringLiteral("--cookies") << cookiesFile;
+    if (!m_cookiesFile.isEmpty())
+        args << QStringLiteral("--cookies") << m_cookiesFile;
 
     args << pendingNormalizedUrl;
 
@@ -220,6 +220,25 @@ void YTPlayer::onYtdlpReadyRead()
     if (!ytdlpProcess) return;
     ytdlpStdoutBuffer.append(ytdlpProcess->readAllStandardOutput());
 }
+
+bool YTPlayer::supportsFeature(const QString& feature) const {
+    static const QStringList supported = {
+        "youtube", "cookies", "quitAndWait", "playlist"
+    };
+    return supported.contains(feature);
+}
+
+void YTPlayer::setCookiesFile(const QString& path) {
+    if (m_cookiesFile != path) {
+        m_cookiesFile = path;
+        emit featureChanged("cookies", !path.isEmpty());
+    }
+}
+
+QString YTPlayer::cookiesFile() const {
+    return m_cookiesFile;
+}
+
 
 void YTPlayer::onYtdlpReadyReadError() {
     if (!ytdlpProcess) return;
@@ -319,8 +338,8 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
     QString headerList = QString("Referer: %1,User-Agent: %2").arg(refererHeader, userAgent);
     libvlc_media_add_option(m_currentMedia, (":http-header-fields=" + headerList).toUtf8().constData());
 
-    if (!cookiesFile.isEmpty()) {
-        libvlc_media_add_option(m_currentMedia, (":http-cookies-file=" + cookiesFile).toUtf8().constData());
+    if (!m_cookiesFile.isEmpty()) {
+        libvlc_media_add_option(m_currentMedia, (":http-cookies-file=" + m_cookiesFile).toUtf8().constData());
     }
 
     // Устанавливаем media и воспроизводим
