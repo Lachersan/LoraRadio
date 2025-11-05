@@ -1,7 +1,5 @@
 #include <QApplication>
-#include <QTranslator>
 #include <QLibraryInfo>
-#include <QFile>
 #include <QDir>
 #include <QTextStream>
 #include "MainWindow.h"
@@ -12,10 +10,31 @@
 #include "../include/FontLoader.h"
 #include <QSettings>
 #include <csignal>
+#include <QMessageLogger>
+#include <QFile>
+#include <QDateTime>
+#include <QStandardPaths>
+
+// Custom message handler
+void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    QString logDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QDir::separator() + "logs";
+    QDir().mkpath(logDir);
+    QFile logFile(logDir + QDir::separator() + "app_log.txt");
+    if (logFile.open(QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&logFile);
+        QString ts = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+        out << ts << " [" << type << "] " << msg << " (" << context.file << ":" << context.line << ")\n";
+        logFile.close();
+    }
+    // Still output to console for debugging
+    if (type == QtFatalMsg) abort();
+}
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    qInstallMessageHandler(myMessageHandler);
 
     QCoreApplication::setOrganizationName("MyApp");
     QCoreApplication::setApplicationName("LoraRadio");

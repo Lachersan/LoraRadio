@@ -91,5 +91,4 @@ private:
     QAction            *m_autostartAction;
     QPoint             m_dragPosition;
     QTranslator        m_translator;
-    YTPlayer           *ytPlayer = nullptr;  // Новый член для доступа к YTPlayer
 };

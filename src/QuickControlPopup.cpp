@@ -3,8 +3,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
-#include <QHBoxLayout>
-#include <QVBoxLayout>  // Добавьте, если не было
+#include <QVBoxLayout>
 #include "StationManager.h"
 
 namespace {

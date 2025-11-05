@@ -3,7 +3,6 @@
 #include <QListWidget>
 #include <QSlider>
 #include <QSpinBox>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include "IconButton.h"
 using namespace fluent_icons;
@@ -26,12 +25,6 @@ RadioPage::RadioPage(StationManager* stations,
     }
     setStations(names);
 
-    // ИЗМЕНЕНО: Инициализируем текущий индекс из lastStationIndex и авто-проигрываем
-    m_currentStationIndex = m_stations->lastStationIndex(QStringLiteral("radio"));
-    if (m_currentStationIndex >= 0 && m_currentStationIndex < radioInit.size()) {
-        m_listWidget->setCurrentRow(m_currentStationIndex);
-        playStation(m_currentStationIndex);
-    }
 }
 
 void RadioPage::setupUi()

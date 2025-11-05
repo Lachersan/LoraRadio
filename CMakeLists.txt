@@ -14,6 +14,7 @@ set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 # Настройка libVLC
 set(VLC_ROOT "F:/vlc-3.0.21")
 
+
 # Поиск заголовков (исправленный путь с /sdk/include)
 find_path(VLC_INCLUDE_DIR
         NAMES vlc/libvlc.h
@@ -112,11 +113,14 @@ target_link_libraries(LoraRadio
 
 # Копирование DLL и plugins для libVLC (Windows, исправленные пути: DLL в root, plugins в root)
 if(WIN32)
-    # DLL (в корне VLC, не в sdk/lib)
+    # Копирование всех DLL из корня VLC с помощью cmd (для поддержки wildcard)
     add_custom_command(TARGET LoraRadio POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${VLC_ROOT}/libvlc.dll"
             "${VLC_ROOT}/libvlccore.dll"
+            # Добавь эти, если нужны (протестируй)
+            "${VLC_ROOT}/npvlc.dll"
+            "${VLC_ROOT}/axvlc.dll"  # Если avxlic.dll — опечатка в скриншоте?
             $<TARGET_FILE_DIR:LoraRadio>
             COMMENT "Copying VLC DLLs"
     )
@@ -127,6 +131,13 @@ if(WIN32)
             "${VLC_ROOT}/plugins"
             $<TARGET_FILE_DIR:LoraRadio>/plugins
             COMMENT "Copying VLC plugins"
+    )
+    # Копирование lua скриптов для VLC (необходимо для YouTube и других плейлистов)
+    add_custom_command(TARGET LoraRadio POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${VLC_ROOT}/lua"
+            $<TARGET_FILE_DIR:LoraRadio>/lua
+            COMMENT "Copying VLC lua scripts"
     )
 endif()
 

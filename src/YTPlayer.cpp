@@ -6,7 +6,6 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QJsonObject>
 #include <QSettings>
 #include <QRegularExpression>
 #include <QJsonValue>
@@ -26,7 +25,7 @@ static void writeLog(const QString &name, const QString &content) {
 
 YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     : AbstractPlayer(parent)
-    , cookiesFile(cookiesFile_)
+    , m_cookiesFile(cookiesFile_)
     , m_isRunning(false)
 {
     qDebug() << "[YTPlayer] ctor START";
@@ -35,18 +34,23 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     const char *vlc_args[] = {
         "--no-video",          // Audio only
         "--intf=dummy",        // No interface
-        "--ipv4-timeout=5000", // 5s TCP connection timeout (replaces invalid --network-timeout)
-        "--network-caching=1000", // 1s network buffering to handle live stream delays
-        "--http-reconnect",    // Automatically reconnect if the stream drops
-        "--aout=directsound",  // Windows audio output
-        "--quiet"
+        "--ipv4-timeout=5000",
+        "--network-caching=1000",
+        "--http-reconnect",
+        "--aout=directsound",
+        "--plugin-path=./plugins",
+        "--lua-intf=luaintf",
+        "--verbose=2",         // Detailed logs
+        "--file-logging",      // Enable file logging
+        "--logfile=logs/vlc_log.txt"  // Log to <exe_dir>/logs/vlc_log.txt (create logs dir if needed)
     };
     m_instance = libvlc_new(sizeof(vlc_args) / sizeof(vlc_args[0]), vlc_args);
     if (!m_instance) {
-        qWarning() << "[YTPlayer] Failed to create libVLC instance";
+        qWarning() << "[YTPlayer] Failed to create libVLC instance. LibVLC error:" << libvlc_errmsg();
         emit errorOccurred("Failed to initialize libVLC");
         return;
     }
+    qDebug() << "[YTPlayer] libVLC initialized successfully.";
 
     m_player = libvlc_media_player_new(m_instance);
     if (!m_player) {
@@ -75,6 +79,7 @@ YTPlayer::YTPlayer(const QString& cookiesFile_, QObject* parent)
     connect(qApp, &QCoreApplication::aboutToQuit, this, [this]() {
         this->stop();
     });
+    connect(ytdlpProcess, &QProcess::readyReadStandardError, this, &YTPlayer::onYtdlpReadyReadError);
 
     // load volume from settings
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MyApp", "LoraRadio");
@@ -98,6 +103,11 @@ YTPlayer::~YTPlayer()
     if (ytdlpProcess && ytdlpProcess->state() != QProcess::NotRunning) {
         ytdlpProcess->kill();
         ytdlpProcess->waitForFinished(300);
+    }
+
+    if (m_currentMedia) {
+        libvlc_media_release(m_currentMedia);
+        m_currentMedia = nullptr;
     }
 
     // Release libVLC
@@ -147,6 +157,12 @@ void YTPlayer::play(const QString& url)
 
     stop();
 
+    qDebug() << "[YTPlayer] Play requested for URL:" << url;
+    qDebug() << "[YTPlayer] Current working dir:" << QDir::currentPath();
+    qDebug() << "[YTPlayer] PATH env:" << qgetenv("PATH");
+
+
+
     // normalize possible 11-char id
     QString normalized = url.trimmed();
     QRegularExpression rx("^[A-Za-z0-9_-]{11}$");
@@ -180,26 +196,56 @@ void YTPlayer::play(const QString& url)
     else
         args << QStringLiteral("--no-playlist");
 
-    if (!cookiesFile.isEmpty())
-        args << QStringLiteral("--cookies") << cookiesFile;
+    if (!m_cookiesFile.isEmpty())
+        args << QStringLiteral("--cookies") << m_cookiesFile;
 
     args << pendingNormalizedUrl;
 
     ytdlpProcess->setArguments(args);
-    qDebug() << "[YTPlayer] Starting yt-dlp with args:" << args;
+
     ytdlpProcess->start();
     if (!ytdlpProcess->waitForStarted(3000)) {
-        qWarning() << "[YTPlayer] yt-dlp failed to start";
-        emit errorOccurred("yt-dlp failed to start");
+        qWarning() << "[YTPlayer] yt-dlp failed to start. Error:" << ytdlpProcess->errorString();
+        emit errorOccurred("yt-dlp failed to start: " + ytdlpProcess->errorString());
         return;
     }
+    qDebug() << "[YTPlayer] yt-dlp started successfully. PID:" << ytdlpProcess->processId();
     ytdlpTimer->start(30000); // 30s timeout for live/slow responses
+
 }
 
 void YTPlayer::onYtdlpReadyRead()
 {
     if (!ytdlpProcess) return;
     ytdlpStdoutBuffer.append(ytdlpProcess->readAllStandardOutput());
+}
+
+bool YTPlayer::supportsFeature(const QString& feature) const {
+    static const QStringList supported = {
+        "youtube", "cookies", "quitAndWait", "playlist"
+    };
+    return supported.contains(feature);
+}
+
+void YTPlayer::setCookiesFile(const QString& path) {
+    if (m_cookiesFile != path) {
+        m_cookiesFile = path;
+        emit featureChanged("cookies", !path.isEmpty());
+    }
+}
+
+QString YTPlayer::cookiesFile() const {
+    return m_cookiesFile;
+}
+
+
+void YTPlayer::onYtdlpReadyReadError() {
+    if (!ytdlpProcess) return;
+    QString err = QString::fromUtf8(ytdlpProcess->readAllStandardError()).trimmed();
+    if (!err.isEmpty()) {
+        qWarning() << "[YTPlayer] yt-dlp stderr (real-time):" << err;
+        writeLog("yt_err_realtime.txt", err + "\n");  // Append to separate file for real-time
+    }
 }
 
 void YTPlayer::onYtdlpTimeout()
@@ -219,7 +265,6 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
     QString stdoutStr = QString::fromUtf8(ytdlpStdoutBuffer).trimmed();
     QString stderrStr = QString::fromUtf8(ytdlpProcess->readAllStandardError()).trimmed();
 
-    // dump for diagnostics
     writeLog("yt_out.txt", stdoutStr);
     writeLog("yt_err.txt", stderrStr);
 
@@ -227,8 +272,6 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
     qDebug() << "[YTPlayer] yt-dlp stdout (snippet):" << stdoutStr.left(1024);
     qDebug() << "[YTPlayer] yt-dlp stderr (snippet):" << stderrStr.left(1024);
 
-    // Если получил пустой stdout или yt-dlp вернул ошибку о недоступном формате,
-    // попробуем fallback: запросить МАНИФЕСТ (без -f).
     bool needFallback = stdoutStr.isEmpty() ||
                         stderrStr.contains("Requested format is not available") ||
                         stderrStr.contains("only manifest");
@@ -237,7 +280,6 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
         qDebug() << "[YTPlayer] Trying fallback: request manifest (no -f)";
         ytdlpTriedManifest = true;
 
-        // Перезапускаем yt-dlp без -f чтобы получить манифест (если он есть).
         QString prog = ytdlpProcess->program();
         QStringList args;
         args << QStringLiteral("-g")
@@ -253,7 +295,7 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
             return;
         }
         ytdlpTimer->start(30000);
-        return; // ждём второго завершения
+        return;
     }
 
     if (stdoutStr.isEmpty()) {
@@ -262,7 +304,6 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
         return;
     }
 
-    // first non-empty line is the direct URL or manifest
     QStringList lines = stdoutStr.split('\n', Qt::SkipEmptyParts);
     for (QString &s : lines) s = s.trimmed();
     if (lines.isEmpty()) {
@@ -272,34 +313,41 @@ void YTPlayer::onYtdlpFinished(int exitCode, QProcess::ExitStatus)
     QString directUrl = lines.first();
     qDebug() << "[YTPlayer] Resolved URL:" << directUrl.left(400);
 
-    // Stop current playback
+    // ИСПРАВЛЕНО: Остановка и освобождение предыдущего media
     libvlc_media_player_stop(m_player);
 
-    // Create new media
-    libvlc_media_t *media = libvlc_media_new_location(m_instance, directUrl.toUtf8().constData());
-    if (!media) {
+    // КРИТИЧНО: Освобождаем предыдущий media перед созданием нового
+    if (m_currentMedia) {
+        libvlc_media_release(m_currentMedia);
+        m_currentMedia = nullptr;
+        qDebug() << "[YTPlayer] Released previous media";
+    }
+
+    // Создаем новый media
+    m_currentMedia = libvlc_media_new_location(m_instance, directUrl.toUtf8().constData());
+    if (!m_currentMedia) {
         qWarning() << "[YTPlayer] Failed to create libVLC media";
         emit errorOccurred("Failed to create media from URL");
         return;
     }
 
-    // Set HTTP headers
+    // HTTP headers
     QString refererHeader = pendingNormalizedUrl;
     QString userAgent = QStringLiteral("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
     QString headerList = QString("Referer: %1,User-Agent: %2").arg(refererHeader, userAgent);
-    libvlc_media_add_option(media, (":http-header-fields=" + headerList).toUtf8().constData());
+    libvlc_media_add_option(m_currentMedia, (":http-header-fields=" + headerList).toUtf8().constData());
 
-    // Set cookies if provided
-    if (!cookiesFile.isEmpty()) {
-        libvlc_media_add_option(media, (":http-cookies-file=" + cookiesFile).toUtf8().constData());
+    if (!m_cookiesFile.isEmpty()) {
+        libvlc_media_add_option(m_currentMedia, (":http-cookies-file=" + m_cookiesFile).toUtf8().constData());
     }
 
-    // Set media and play
-    libvlc_media_player_set_media(m_player, media);
+    // Устанавливаем media и воспроизводим
+    libvlc_media_player_set_media(m_player, m_currentMedia);
     libvlc_media_player_play(m_player);
-    libvlc_media_release(media);
 
-    // Set volume and mute
+    // НЕ ВЫЗЫВАЕМ libvlc_media_release здесь! Храним m_currentMedia для последующего освобождения
+
+    // Устанавливаем громкость и mute
     libvlc_audio_set_volume(m_player, currentVolume);
     libvlc_audio_set_mute(m_player, mutedState ? true : false);
 

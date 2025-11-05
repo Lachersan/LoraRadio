@@ -1,8 +1,5 @@
 #include "StationManager.h"
-#include <QFile>
-#include <QFileInfo>
 #include <QDir>
-#include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QCoreApplication>
