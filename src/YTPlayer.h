@@ -1,18 +1,21 @@
 #pragma once
 
+#include <vlc/vlc.h>  // For libVLC types and functions
+
+#include <QLocalSocket>
 #include <QObject>
 #include <QProcess>
 #include <QTimer>
-#include <QLocalSocket>
+
 #include "../include/AbstractPlayer.h"
-#include <vlc/vlc.h>  // For libVLC types and functions
 
-class AbstractPlayer; // forward (assume exists)
+class AbstractPlayer;  // forward (assume exists)
 
-class YTPlayer : public AbstractPlayer {
+class YTPlayer : public AbstractPlayer
+{
     Q_OBJECT
-public:
-    explicit YTPlayer(const QString& cookiesFile = QString(), QObject* parent = nullptr);
+   public:
+    explicit YTPlayer(QString cookiesFile = QString(), QObject* parent = nullptr);
     ~YTPlayer() override;
 
     // control API
@@ -30,30 +33,30 @@ public:
     void setMuted(bool muted);
     bool isMuted() const;
 
-signals:
+   signals:
     void playbackStateChanged(bool playing);
     void volumeChanged(int volume);
     void mutedChanged(bool muted);
     void errorOccurred(const QString& message);
 
-private slots:
+   private slots:
     // yt-dlp
     void onYtdlpReadyRead();
     void onYtdlpFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onYtdlpTimeout();
-    void onYtdlpReadyReadError();
+    void onYtdlpReadyReadError() const;
 
     // libVLC events (no slots needed, use static callbacks)
 
-private:
+   private:
     // libVLC members
-    libvlc_instance_t *m_instance = nullptr;
-    libvlc_media_player_t *m_player = nullptr;
+    libvlc_instance_t* m_instance = nullptr;
+    libvlc_media_player_t* m_player = nullptr;
     libvlc_media_t* m_currentMedia = nullptr;
 
     // Static libVLC event callbacks
-    static void onMediaEndReached(const libvlc_event_t *event, void *user_data);
-    static void onMediaError(const libvlc_event_t *event, void *user_data);
+    static void onMediaEndReached(const libvlc_event_t* event, void* user_data);
+    static void onMediaError(const libvlc_event_t* event, void* user_data);
 
     void writeLogFile(const QString& name, const QString& contents);
 
