@@ -11,42 +11,39 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_PREFIX_PATH "F:/Qt/6.9.0/mingw_64")
 set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 
-# Настройка libVLC
-set(VLC_ROOT "F:/vlc-3.0.21")
+set(THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/thirdparty")
+set(FFPLAY_SRC "${THIRDPARTY_DIR}/ffplay.exe")
+set(FFMPEG_SRC "${THIRDPARTY_DIR}/ffmpeg.exe")
+set(YTDL_SRC "${THIRDPARTY_DIR}/yt-dlp.exe")
 
+if (NOT EXISTS ${FFPLAY_SRC})
+    message(WARNING "File ${FFPLAY_SRC} not found. It will not be copied.")
+else ()
+    message(STATUS "Found ${FFPLAY_SRC}")
+endif ()
 
-# Поиск заголовков (исправленный путь с /sdk/include)
-find_path(VLC_INCLUDE_DIR
-        NAMES vlc/libvlc.h
-        PATHS "${VLC_ROOT}/sdk/include"
-        NO_DEFAULT_PATH
+if (NOT EXISTS ${FFMPEG_SRC})
+    message(WARNING "File ${FFMPEG_SRC} not found. It will not be copied.")
+else ()
+    message(STATUS "Found ${FFMPEG_SRC}")
+endif ()
+
+if (NOT EXISTS ${YTDL_SRC})
+    message(WARNING "File ${YTDL_SRC} not found. It will not be copied.")
+else ()
+    message(STATUS "Found ${YTDL_SRC}")
+endif ()
+
+set(THIRDPARTY_DEST_DIR "${CMAKE_BINARY_DIR}/thirdparty")
+
+add_custom_target(CopyThirdParty
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${THIRDPARTY_DEST_DIR}" # Создаём папку thirdparty в бинарной директории
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FFPLAY_SRC}" "${THIRDPARTY_DEST_DIR}/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FFMPEG_SRC}" "${THIRDPARTY_DEST_DIR}/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${YTDL_SRC}" "${THIRDPARTY_DEST_DIR}/" # Теперь копируем yt-dlp
+        COMMENT "Copying thirdparty executables to build directory..."
+        VERBATIM
 )
-
-# Поиск библиотек (.lib, исправленный путь с /sdk/lib)
-find_library(VLC_LIBRARY
-        NAMES libvlc
-        PATHS "${VLC_ROOT}/sdk/lib"
-        NO_DEFAULT_PATH
-)
-
-find_library(VLCCORE_LIBRARY
-        NAMES libvlccore
-        PATHS "${VLC_ROOT}/sdk/lib"
-        NO_DEFAULT_PATH
-)
-
-# Проверка, что всё найдено
-if(NOT VLC_INCLUDE_DIR)
-    message(FATAL_ERROR "VLC include directory not found. Check ${VLC_ROOT}/sdk/include/vlc/libvlc.h")
-endif()
-
-if(NOT VLC_LIBRARY OR NOT VLCCORE_LIBRARY)
-    message(FATAL_ERROR "VLC libraries not found. Check ${VLC_ROOT}/sdk/lib/libvlc.lib and libvlccore.lib")
-endif()
-
-message(STATUS "VLC found: ${VLC_INCLUDE_DIR}")
-message(STATUS "VLC lib: ${VLC_LIBRARY}")
-message(STATUS "VLCCore lib: ${VLCCORE_LIBRARY}")
 
 find_package(Qt6 COMPONENTS
         Core
@@ -96,53 +93,14 @@ add_executable(LoraRadio WIN32
         src/SwitchPlayer.h
 )
 
-# Инклуды для libVLC
-target_include_directories(LoraRadio PRIVATE
-        ${VLC_INCLUDE_DIR}
-)
-
-# Новая линковка с libVLC
 target_link_libraries(LoraRadio
-        ${VLC_LIBRARY}
-        ${VLCCORE_LIBRARY}
         Qt::Core
         Qt::Gui
         Qt::Widgets
         Qt::Multimedia
 )
 
-# Копирование DLL и plugins для libVLC (Windows, исправленные пути: DLL в root, plugins в root)
-if(WIN32)
-    # Копирование всех DLL из корня VLC с помощью cmd (для поддержки wildcard)
-    add_custom_command(TARGET LoraRadio POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${VLC_ROOT}/libvlc.dll"
-            "${VLC_ROOT}/libvlccore.dll"
-            # Добавь эти, если нужны (протестируй)
-            "${VLC_ROOT}/npvlc.dll"
-            "${VLC_ROOT}/axvlc.dll"  # Если avxlic.dll — опечатка в скриншоте?
-            $<TARGET_FILE_DIR:LoraRadio>
-            COMMENT "Copying VLC DLLs"
-    )
-
-    # Папка plugins (в корне VLC)
-    add_custom_command(TARGET LoraRadio POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${VLC_ROOT}/plugins"
-            $<TARGET_FILE_DIR:LoraRadio>/plugins
-            COMMENT "Copying VLC plugins"
-    )
-    # Копирование lua скриптов для VLC (необходимо для YouTube и других плейлистов)
-    add_custom_command(TARGET LoraRadio POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${VLC_ROOT}/lua"
-            $<TARGET_FILE_DIR:LoraRadio>/lua
-            COMMENT "Copying VLC lua scripts"
-    )
-endif()
-
 set(WINDEPLOYQT_PATH "F:/Qt/6.9.0/mingw_64/bin/windeployqt.exe")
-
 set(TARGET_EXE "$<TARGET_FILE:LoraRadio>")
 
 add_custom_command(TARGET LoraRadio POST_BUILD
@@ -150,6 +108,7 @@ add_custom_command(TARGET LoraRadio POST_BUILD
         COMMENT "Запуск windeployqt для копирования Qt DLL и плагинов"
 )
 
+# --- Копирование Qt DLL и плагинов ---
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -178,3 +137,5 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
 endif ()
+
+add_dependencies(LoraRadio CopyThirdParty)

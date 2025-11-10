@@ -269,6 +269,10 @@ void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 
 void MainWindow::setupConnections()
 {
+    connect(m_player,
+            &AbstractPlayer::playbackStateChanged,  // Signal от текущего плеера
+            radioPage, &RadioPage::setPlaybackState);  // Slot в RadioPage
+
     connect(m_btnClose, &IconButton::clicked, this, &MainWindow::close);
     connect(m_btnMinimize, &IconButton::clicked, this,
             &MainWindow::showMinimized);
@@ -687,8 +691,6 @@ void MainWindow::onReconnectClicked()
 
     m_player->play(st.url);
 
-    // Исправление: обновляем индекс ПЕРЕД
-    // установкой громкости
     m_currentGlobalIdx = global;
 
     m_player->setVolume(st.volume);

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vlc/vlc.h>  // For libVLC types and functions
-
 #include <QLocalSocket>
 #include <QObject>
 #include <QProcess>
@@ -15,7 +13,8 @@ class YTPlayer : public AbstractPlayer
 {
     Q_OBJECT
    public:
-    explicit YTPlayer(QString cookiesFile = QString(), QObject* parent = nullptr);
+    explicit YTPlayer(QString cookiesFile = QString(),
+                      QObject* parent = nullptr);
     ~YTPlayer() override;
 
     // control API
@@ -46,17 +45,13 @@ class YTPlayer : public AbstractPlayer
     void onYtdlpTimeout();
     void onYtdlpReadyReadError() const;
 
-    // libVLC events (no slots needed, use static callbacks)
+    // ffplay
+    void onFfplayFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onFfplayError(QProcess::ProcessError error);
 
    private:
-    // libVLC members
-    libvlc_instance_t* m_instance = nullptr;
-    libvlc_media_player_t* m_player = nullptr;
-    libvlc_media_t* m_currentMedia = nullptr;
-
-    // Static libVLC event callbacks
-    static void onMediaEndReached(const libvlc_event_t* event, void* user_data);
-    static void onMediaError(const libvlc_event_t* event, void* user_data);
+    // ffplay process
+    QProcess* ffplayProcess = nullptr;
 
     void writeLogFile(const QString& name, const QString& contents);
 
