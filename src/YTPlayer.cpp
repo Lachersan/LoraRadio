@@ -323,6 +323,17 @@ void YTPlayer::onFfmpegFinished(int exitCode, QProcess::ExitStatus)
         m_playing = false;
         emit playbackStateChanged(false);
     }
+
+    // Переподключаемся если есть URL и пользователь сам не остановил
+    if (!pendingNormalizedUrl.isEmpty())
+    {
+        qDebug() << "[YTPlayer] reconnecting in 3 sec...";
+        QTimer::singleShot(3000, this,
+                           [this]()
+                           {
+                               if (!m_stopping && !m_playing) play(pendingNormalizedUrl);
+                           });
+    }
 }
 
 void YTPlayer::onFfmpegError(QProcess::ProcessError error)
